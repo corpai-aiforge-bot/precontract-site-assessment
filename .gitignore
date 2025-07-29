@@ -5,15 +5,20 @@ frontend/.env*
 frontend/.DS_Store
 frontend/.vercel
 
-# ---- Python / Render Backend ----
-backend/__pycache__/
-backend/env/
-backend/venv/
-backend/.env*
-backend/.DS_Store
-backend/.pytest_cache/
-backend/.mypy_cache/
-backend/.pylint.d/
+# Python
+*.py[cod]
+*.so
+__pycache__/
+*.pyd
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
 
 # ---- Global ----
 .env

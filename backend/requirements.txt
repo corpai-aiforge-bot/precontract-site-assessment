@@ -1,0 +1,49 @@
+# --- Core Framework ---
+fastapi
+uvicorn[standard]
+pydantic[email]
+python-multipart
+python-dotenv
+
+# --- Supabase SDK + Helpers ---
+supabase
+postgrest
+gotrue
+storage3
+realtime
+proto-plus
+protobuf
+
+# --- Auth & JWT ---
+python-jose
+PyJWT
+
+# --- Network & API ---
+requests
+httpx
+
+# --- Email + Validation ---
+email-validator
+
+# --- Google Cloud (for GCS uploads) ---
+google-cloud-storage
+google-api-core
+google-auth
+
+# --- LLM + TTS Providers ---
+openai>=1.0.0
+anthropic
+groq
+elevenlabs
+google-generativeai
+
+# --- Compatibility / Typing ---
+typing-extensions
+typing-inspection
+
+# --- Optional: CORS, Logging, Scheduling, and Misc Utilities ---
+python-dateutil
+aiofiles         # for file handling in FastAPI
+jinja2           # useful for templating if needed
+loguru           # better logging
+apscheduler      # optional scheduling
