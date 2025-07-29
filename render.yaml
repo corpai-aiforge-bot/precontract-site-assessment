@@ -1,1 +1,12 @@
+services:
+  - type: web
+    name: precontract-backend
+    env: docker
+    region: oregon  # or change to your desired Render region
+    branch: main
+    repo: https://github.com/corpai-aiforge-bot/precontract-site-assessment
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    autoDeploy: true
+    plan: free  # or change to 'starter', 'standard', etc., if needed
 # Render config
