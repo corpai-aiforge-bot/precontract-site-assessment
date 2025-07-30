@@ -89,7 +89,7 @@ export default function PreContractAssessmentForm() {
           onChange={e => setFormData({ ...formData, projectName: e.target.value })}
           className="w-full p-2 border rounded"
         />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <input placeholder="First Name" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="p-2 border rounded" />
           <input placeholder="Last Name" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="p-2 border rounded" />
         </div>
