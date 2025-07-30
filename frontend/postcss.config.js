@@ -1,7 +1,7 @@
 // frontend/postcss.config.js
 module.exports = {
   plugins: {
-    '@tailwindcss/postcss': {}, // ✅ Tailwind 4-compatible
+    '@tailwindcss/postcss': {},
     autoprefixer: {},
   },
-}
+};
