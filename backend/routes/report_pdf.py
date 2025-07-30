@@ -18,7 +18,7 @@ async def generate_report_pdf(request: Request):
     if not project_id:
         raise HTTPException(status_code=400, detail="Missing project id")
 
-    result = supabase.from("projects").select("*").eq("id", project_id).single().execute()
+    result = supabase.from_("projects").select("*").eq("id", project_id).single().execute()
     if result.error:
         raise HTTPException(status_code=404, detail="Project not found")
 

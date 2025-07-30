@@ -13,7 +13,7 @@ export default function AddressAutocomplete({ onSelect }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!window.google || !window.google.maps) return;
+    if (!window.google || !window.google.maps || !window.google.maps.places) return;
     if (!inputRef.current) return;
 
     const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
@@ -34,7 +34,7 @@ export default function AddressAutocomplete({ onSelect }: Props) {
         lng,
       });
     });
-  }, []);
+  }, [onSelect]);
 
   return (
     <div className="mb-4">
