@@ -1,7 +1,6 @@
 // pages/report-preview.tsx
 import { useEffect, useState } from 'react';
 import supabase from '../lib/supabaseClient';
-import PDFRender from '../components/PDFRender';
 import Layout from '../components/Layout';
 
 interface Project {
@@ -74,7 +73,14 @@ export default function ReportPreview() {
 
         <section className="mt-6">
           <h2 className="font-semibold text-lg mb-2">Printable PDF View</h2>
-          <PDFRender src={`/api/report-pdf?id=${project.id}`} />
+          <a
+            href={`/api/report-pdf?id=${project.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+          >
+            View Generated PDF
+          </a>
         </section>
       </div>
     </Layout>
