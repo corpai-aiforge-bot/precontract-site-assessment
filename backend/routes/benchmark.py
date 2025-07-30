@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from ../../utils.benchmark_lookup import find_nearest_benchmarks
+from utils.benchmark_lookup import find_nearest_benchmarks
 
 router = APIRouter()
 
