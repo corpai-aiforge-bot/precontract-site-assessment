@@ -1,7 +1,6 @@
 // pages/report-preview.tsx
 import { useEffect, useState } from 'react';
 import supabase from '../lib/supabaseClient';
-import Layout from '../components/Layout';
 
 interface Project {
   id: string;
