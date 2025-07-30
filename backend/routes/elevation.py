@@ -1,5 +1,6 @@
+# backend/routes/elevation.py
 from fastapi import APIRouter, Request
-from utils.elevation_logic import get_elevation_from_google
+from backend.utils.elevation_logic import get_elevation_from_google
 
 router = APIRouter()
 
@@ -10,7 +11,7 @@ async def get_elevation(request: Request):
     lng = data.get("lng")
 
     if lat is None or lng is None:
-        return {"error": "lat/lng required"}, 400
+        return {"error": "lat and lng required"}, 400
 
     elevation = get_elevation_from_google(lat, lng)
     return {"elevation": elevation}

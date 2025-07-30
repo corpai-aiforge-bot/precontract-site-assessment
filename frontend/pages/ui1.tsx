@@ -1,6 +1,8 @@
 // frontend/pages/ui1.tsx
 import { useState } from 'react';
 import AddressAutocomplete from '../components/addressAutocomplete';
+import { supabase } from '@/utils/supabaseClient';
+
 
 interface AddressMetadata {
   address: string;
@@ -38,26 +40,73 @@ export default function PreContractAssessmentForm() {
     services: [] as string[],
   });
 
-  const handleAddressSelect = (meta: AddressMetadata) => {
-    const { address, council, elevation, distanceToCoast, windZone, balRating, benchmark1, benchmark2, footingRecommendation, riskSummary } = meta;
-    const addressParts = address.split(',').map(p => p.trim());
+  async function fetchCouncilName(postcode: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('councils_by_postcode')
+    .select('lga_region')
+    .eq('postcode', postcode)
+    .limit(1)
+    .single();
+
+  if (error) {
+    console.error("Error fetching council:", error);
+    return null;
+  }
+
+  return data?.lga_region || null;
+}
+
+
+    const handleAddressSelect = async (meta: AddressMetadata) => {
+      const { address, lat, lng } = meta;
+      const addressParts = address.split(',').map(p => p.trim());
+
+      const suburb = addressParts[1] || '';
+      const state = addressParts[2]?.split(' ')[0] || '';
+      const postcode = addressParts[2]?.split(' ')[1] || '';
+
+      const council = await fetchCouncilName(postcode);
+      const elevation = await fetchElevation(lat, lng);
+      const distanceToCoast = await fetchDistanceToCoast(lat, lng);
+
+      setFormData(prev => ({
+        ...prev,
+        street: addressParts[0] || '',
+        suburb,
+        state,
+        postcode,
+        council: council || '',
+        elevation: elevation?.toString() || '',
+        distanceToCoast: distanceToCoast?.toString() || '',
+        windZone: '',               // next step
+        balRating: '',              // manual
+        benchmark1: '',             // todo
+        benchmark2: '',             // todo
+        footingRecommendation: '',  // todo
+        riskSummary: '',            // todo
+      }));
+  const { benchmark1, benchmark2 } = await fetchBenchmarks(suburb, postcode);
+
     setFormData(prev => ({
       ...prev,
       street: addressParts[0] || '',
-      suburb: addressParts[1] || '',
-      state: addressParts[2]?.split(' ')[0] || '',
-      postcode: addressParts[2]?.split(' ')[1] || '',
+      suburb,
+      state,
+      postcode,
       council: council || '',
       elevation: elevation?.toString() || '',
       distanceToCoast: distanceToCoast?.toString() || '',
-      windZone: windZone || '',
-      balRating: balRating || '',
+      windZone: '', // todo
+      balRating: '', // manual
       benchmark1: benchmark1?.toString() || '',
       benchmark2: benchmark2?.toString() || '',
-      footingRecommendation: footingRecommendation || '',
-      riskSummary: riskSummary || '',
+      footingRecommendation: '',  // derived later
+      riskSummary: '',            // derived later
     }));
-  };
+
+    };
+
+
 
   const handleServiceToggle = (service: string) => {
     setFormData(prev => ({
@@ -67,6 +116,57 @@ export default function PreContractAssessmentForm() {
         : [...prev.services, service],
     }));
   };
+
+async function fetchElevation(lat: number, lng: number): Promise<number | null> {
+  const res = await fetch('/api/elevation', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat, lng }),
+  });
+
+  if (!res.ok) {
+    console.error("Elevation fetch failed:", await res.text());
+    return null;
+  }
+
+  const { elevation } = await res.json();
+  return elevation;
+}
+
+
+  async function fetchBenchmarks(suburb: string, postcode: string): Promise<{ benchmark1: number | null, benchmark2: number | null }> {
+  const res = await fetch('/api/benchmarks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ suburb, postcode }),
+  });
+
+  if (!res.ok) {
+    console.error("Benchmark fetch failed:", await res.text());
+    return { benchmark1: null, benchmark2: null };
+  }
+
+  return await res.json();
+}
+
+
+
+  async function fetchDistanceToCoast(lat: number, lng: number): Promise<number | null> {
+  const res = await fetch('/api/proximity', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat, lng }),
+  });
+
+  if (!res.ok) {
+    console.error("Distance to coast fetch failed:", await res.text());
+    return null;
+  }
+
+  const { distanceToCoast } = await res.json();
+  return distanceToCoast;
+}
+
 
   const handleSubmit = async () => {
     // Post data to Supabase or backend, then redirect

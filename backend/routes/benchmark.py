@@ -1,27 +1,31 @@
+# backend/routes/benchmark.py
 from fastapi import APIRouter, Request
-from utils.benchmark_lookup import find_nearest_benchmarks
+from supabase import create_client
+import os
 
 router = APIRouter()
 
-@router.post("/benchmark")
-async def get_benchmark_slope(request: Request):
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+@router.post("/api/benchmarks")
+async def get_benchmarks(request: Request):
     data = await request.json()
-    lat = data.get("lat")
-    lng = data.get("lng")
+    suburb = data.get("suburb")
+    postcode = data.get("postcode")
 
-    if lat is None or lng is None:
-        return {"error": "lat/lng required"}, 400
+    if not suburb or not postcode:
+        return {"error": "suburb and postcode are required"}, 400
 
-    points = find_nearest_benchmarks(lat, lng)
+    result = supabase.from_("survey_benchmarks_sa") \
+        .select("benchmark1, benchmark2") \
+        .eq("suburb", suburb) \
+        .eq("postcode", postcode) \
+        .limit(1) \
+        .execute()
 
-    if len(points) < 2:
-        return {"error": "Not enough nearby benchmarks found"}, 404
-
-    slope_per_km = (points[1]["elevation"] - points[0]["elevation"]) / (
-        points[1]["distance_km"] + 1e-5)
-
-    return {
-        "benchmarks": points,
-        "estimated_slope_m_per_km": round(slope_per_km, 2),
-        "approx_site_grade_direction": "rising" if slope_per_km > 0 else "falling"
-    }
+    if result.data and len(result.data) > 0:
+        return result.data[0]
+    else:
+        return {"benchmark1": None, "benchmark2": None}
