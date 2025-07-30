@@ -1,6 +1,6 @@
 // pages/report-preview.tsx
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import supabase from '../lib/supabaseClient';
 import PDFRender from '../components/PDFRender';
 import Layout from '../components/Layout';
 
