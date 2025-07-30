@@ -1,6 +1,5 @@
+// frontend/components/addressAutocomplete.tsx
 import React, { useEffect, useRef } from 'react';
-import { useLoadScript } from '@react-google-maps/api';
-import axios from 'axios';
 
 interface AddressMetadata {
   address: string;
@@ -11,63 +10,68 @@ interface AddressMetadata {
   distanceToCoast?: number;
 }
 
-const libraries: ("places")[] = ['places'];
-
 export default function AddressAutocomplete({
   onSelect,
 }: {
   onSelect: (meta: AddressMetadata) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const { isLoaded } = useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries,
-  });
+  const autoRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!isLoaded || !inputRef.current) return;
+    const el = autoRef.current;
+    if (!el) return;
 
-    const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-      types: ['address'],
-    });
+    const handlePlaceSelect = async (event: any) => {
+      const place = event.detail;
+      if (!place || !place.geometry || !place.geometry.location) return;
 
-    autocomplete.addListener('place_changed', async () => {
-      const place = autocomplete.getPlace();
-      const address = place.formatted_address || '';
-      const lat = place.geometry?.location?.lat();
-      const lng = place.geometry?.location?.lng();
-
-      if (!lat || !lng) return;
+      const address = place.formatted_address || place.displayName || '';
+      const lat = place.geometry.location.lat;
+      const lng = place.geometry.location.lng;
 
       try {
         const [geoRes, elevRes, proxRes] = await Promise.all([
-          axios.post('/api/geocode', { lat, lng }),
-          axios.post('/api/elevation', { lat, lng }),
-          axios.post('/api/proximity', { lat, lng }),
+          fetch('/api/geocode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lng }),
+          }).then((r) => r.json()),
+          fetch('/api/elevation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lng }),
+          }).then((r) => r.json()),
+          fetch('/api/proximity', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat, lng }),
+          }).then((r) => r.json()),
         ]);
 
-        const council = geoRes.data.council || '';
-        const elevation = elevRes.data.elevation || null;
-        const distanceToCoast = proxRes.data.distance_km || null;
+        const council = geoRes.council ?? '';
+        const elevation = elevRes.elevation ?? null;
+        const distanceToCoast = proxRes.distance_km ?? null;
 
         onSelect({ address, lat, lng, council, elevation, distanceToCoast });
       } catch (error) {
         console.error('Address metadata lookup failed:', error);
-        onSelect({ address, lat, lng }); // fallback with just basic fields
+        onSelect({ address, lat, lng });
       }
-    });
-  }, [isLoaded]);
+    };
+
+    el.addEventListener('gmpx-place-select', handlePlaceSelect);
+    return () => {
+      el.removeEventListener('gmpx-place-select', handlePlaceSelect);
+    };
+  }, [onSelect]);
 
   return (
     <div className="w-full">
-      <input
-        ref={inputRef}
-        type="text"
+      <gmpx-place-autocomplete
+        ref={autoRef}
+        style={{ width: '100%' }}
         placeholder="Enter site address"
-        className="w-full max-w-3xl px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-blue-200"
-
-      />
+      ></gmpx-place-autocomplete>
     </div>
   );
 }

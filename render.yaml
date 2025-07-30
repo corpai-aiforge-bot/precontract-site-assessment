@@ -9,4 +9,3 @@ services:
     dockerContext: backend
     autoDeploy: true
     plan: free  # or change to 'starter', 'standard', etc., if needed
-# Render config

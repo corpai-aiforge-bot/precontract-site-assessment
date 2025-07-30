@@ -6,14 +6,20 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          {/* ✅ Google Maps API injected here */}
+          {/* ✅ Google Maps JavaScript API (with Places library) */}
           {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
             <script
-              src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+              src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly&region=AU`}
               async
               defer
             ></script>
           )}
+
+          {/* ✅ Extended Place Autocomplete Web Component Loader */}
+          <script
+            type="module"
+            src="https://unpkg.com/@googlemaps/extended-component-library/loader.js"
+          ></script>
         </Head>
         <body>
           <Main />

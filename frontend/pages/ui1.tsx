@@ -1,164 +1,137 @@
-// pages/ui1.tsx
-
-import React, { useState } from 'react';
-import Head from 'next/head';
+// frontend/pages/ui1.tsx
+import { useState } from 'react';
 import AddressAutocomplete from '../components/addressAutocomplete';
-import ProjectMetadataForm from '../components/ProjectMetadataForm';
-import ServiceChecklist from '../components/ServiceChecklist';
-import { submitForm } from '../utils/formSubmit';
 
-interface FormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
+interface AddressMetadata {
   address: string;
-  lat?: number;
-  lng?: number;
+  lat: number;
+  lng: number;
   council?: string;
-  region?: string;
   elevation?: number;
   distanceToCoast?: number;
-  projectName: string;
-  lotNumber: string;
-  selectedServices: string[];
+  windZone?: string;
+  balRating?: string;
+  benchmark1?: number;
+  benchmark2?: number;
+  footingRecommendation?: string;
+  riskSummary?: string;
 }
 
-export default function UI1Page() {
-  const [formData, setFormData] = useState<FormData>({
+export default function PreContractAssessmentForm() {
+  const [formData, setFormData] = useState({
+    projectName: '',
     firstName: '',
     lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    projectName: '',
-    lotNumber: '',
-    selectedServices: [],
+    street: '',
+    suburb: '',
+    postcode: '',
+    state: '',
+    council: '',
+    elevation: '',
+    distanceToCoast: '',
+    windZone: '',
+    balRating: '',
+    benchmark1: '',
+    benchmark2: '',
+    footingRecommendation: '',
+    riskSummary: '',
+    services: [] as string[],
   });
 
-  const handleAddressMetadata = (metadata: Partial<FormData>) => {
-    setFormData((prev) => ({
+  const handleAddressSelect = (meta: AddressMetadata) => {
+    const { address, council, elevation, distanceToCoast } = meta;
+    const addressParts = address.split(',').map(p => p.trim());
+    setFormData(prev => ({
       ...prev,
-      ...metadata,
+      street: addressParts[0] || '',
+      suburb: addressParts[1] || '',
+      state: addressParts[2]?.split(' ')[0] || '',
+      postcode: addressParts[2]?.split(' ')[1] || '',
+      council: council || '',
+      elevation: elevation?.toString() || '',
+      distanceToCoast: distanceToCoast?.toString() || '',
+      // TODO: set windZone, balRating, benchmarks, etc.
     }));
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
+  const handleServiceToggle = (service: string) => {
+    setFormData(prev => ({
       ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleServiceChange = (services: string[]) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedServices: services,
+      services: prev.services.includes(service)
+        ? prev.services.filter(s => s !== service)
+        : [...prev.services, service],
     }));
   };
 
   const handleSubmit = async () => {
-    const result = await submitForm({
-      metadata: {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        lat: formData.lat,
-        lng: formData.lng,
-        council: formData.council,
-        region: formData.region,
-      },
-      services: formData.selectedServices,
-      riskScore: 0, // Replace with actual score if available
-      riskCategory: 'Unknown', // Replace if derived elsewhere
-      elevation: formData.elevation ?? 0,
-      coastalDistance: formData.distanceToCoast ?? 0,
+    // Post data to Supabase or backend, then redirect
+    const res = await fetch('/api/store-project', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
     });
-
-    if (result.success) {
-      console.log('✅ Form submitted. Project ID:', result.projectId);
-    } else {
-      console.error('❌ Submission failed:', result.error);
-    }
+    if (res.ok) window.location.href = '/report-preview';
   };
 
-
   return (
-    <>
-      <Head>
-        <title>PreContract Site Assessment</title>
-      </Head>
-      <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg">
-        <h1 className="text-2xl font-bold mb-4">📋 PreContract Site Assessment</h1>
+    <div className="max-w-3xl mx-auto p-6 bg-white shadow-xl border border-gray-300 rounded-xl mt-8 space-y-6">
+      <h1 className="text-2xl font-semibold">PreContract Data Needed</h1>
 
-        {/* Contact Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <input
-            type="text"
-            name="firstName"
-            placeholder="First Name"
-            value={formData.firstName}
-            onChange={handleInputChange}
-            className="border rounded p-2 w-full"
-          />
-          <input
-            type="text"
-            name="lastName"
-            placeholder="Last Name"
-            value={formData.lastName}
-            onChange={handleInputChange}
-            className="border rounded p-2 w-full"
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleInputChange}
-            className="border rounded p-2 w-full"
-          />
-          <input
-            type="tel"
-            name="phone"
-            placeholder="Phone"
-            value={formData.phone}
-            onChange={handleInputChange}
-            className="border rounded p-2 w-full"
-          />
-        </div>
-
-        {/* Address Autocomplete */}
-        <AddressAutocomplete onSelect={handleAddressMetadata} />
-
-        {/* Auto-Filled Metadata Preview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-6 text-sm text-gray-600">
-          <div>Council: <strong>{formData.council || '—'}</strong></div>
-          <div>Region: <strong>{formData.region || '—'}</strong></div>
-          <div>Elevation: <strong>{formData.elevation ?? '—'} m</strong></div>
-          <div>Distance to Coast: <strong>{formData.distanceToCoast ?? '—'} km</strong></div>
-        </div>
-
-        {/* Project Metadata */}
-        <ProjectMetadataForm formData={formData} onChange={handleInputChange} />
-
-        {/* Services Checklist */}
-        <ServiceChecklist
-          selectedServices={formData.selectedServices}
-          onChange={handleServiceChange}
+      <div className="space-y-4">
+        <input
+          placeholder="Project Name"
+          value={formData.projectName}
+          onChange={e => setFormData({ ...formData, projectName: e.target.value })}
+          className="w-full p-2 border rounded"
         />
+        <div className="grid grid-cols-2 gap-4">
+          <input placeholder="First Name" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="p-2 border rounded" />
+          <input placeholder="Last Name" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="p-2 border rounded" />
+        </div>
 
-        <button
-          onClick={handleSubmit}
-          className="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Submit
-        </button>
+        <AddressAutocomplete onSelect={handleAddressSelect} />
+
+        <div className="grid grid-cols-2 gap-4">
+          <input placeholder="Street" value={formData.street} className="p-2 border rounded" readOnly />
+          <input placeholder="Suburb/Town" value={formData.suburb} className="p-2 border rounded" readOnly />
+          <input placeholder="State" value={formData.state} className="p-2 border rounded" readOnly />
+          <input placeholder="Postcode" value={formData.postcode} className="p-2 border rounded" readOnly />
+        </div>
       </div>
-    </>
+
+      <div className="space-y-2 text-sm text-gray-700">
+        <div><strong>Council:</strong> {formData.council || '—'}</div>
+        <div><strong>Elevation:</strong> {formData.elevation || '—'} m</div>
+        <div><strong>Distance to Coast:</strong> {formData.distanceToCoast || '—'} km</div>
+        <div><strong>Wind Zone:</strong> {formData.windZone || '—'}</div>
+        <div><strong>BAL Rating:</strong> {formData.balRating || '—'}</div>
+        <div><strong>Benchmarks:</strong> {formData.benchmark1 || '—'}, {formData.benchmark2 || '—'}</div>
+        <div><strong>Footing Recommendation:</strong> {formData.footingRecommendation || '—'}</div>
+        <div><strong>Risk Summary:</strong> {formData.riskSummary || '—'}</div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold">Services Requested</h2>
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          {['Site Classification', 'Soil Test', 'Wind Rating', 'BAL Report', 'Flood Risk', 'Environmental Constraints'].map(s => (
+            <label key={s} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.services.includes(s)}
+                onChange={() => handleServiceToggle(s)}
+              />
+              {s}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+      >
+        Approve & Continue
+      </button>
+    </div>
   );
 }

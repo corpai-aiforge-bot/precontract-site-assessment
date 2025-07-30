@@ -1,101 +1,65 @@
-// pages/report-preview.tsx
+// frontend/pages/report-preview.tsx
 import { useEffect, useState } from 'react';
-import supabase from '../lib/supabaseClient';
 
-interface Project {
-  id: string;
-  project_name: string;
-  lot_number: string;
+interface ProjectData {
+  projectName: string;
+  firstName: string;
+  lastName: string;
+  street: string;
+  suburb: string;
+  state: string;
+  postcode: string;
   council: string;
-  address: string;
-  lat: number;
-  lng: number;
-  notes?: string;
-  services: string;
-  submitted_at: string;
-  risk_score?: number;
-  risk_category?: string;
-  elevation?: number;
-  coastal_distance?: number;
+  elevation: string;
+  distanceToCoast: string;
+  windZone: string;
+  balRating: string;
+  benchmark1: string;
+  benchmark2: string;
+  footingRecommendation: string;
+  riskSummary: string;
+  services: string[];
 }
 
 export default function ReportPreview() {
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [project, setProject] = useState<ProjectData | null>(null);
 
   useEffect(() => {
-    async function fetchLatestProject() {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('submitted_at', { ascending: false })
-        .limit(1);
-
-      if (data && data.length > 0) setProject(data[0]);
-      setLoading(false);
-    }
-    fetchLatestProject();
+    fetch('/api/latest-project')
+      .then(res => res.json())
+      .then(data => setProject(data))
+      .catch(() => setProject(null));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="max-w-3xl mx-auto mt-10 text-center text-gray-500">
-        Loading latest report...
-      </div>
-    );
-  }
-
-  if (!project) {
-    return (
-      <div className="max-w-3xl mx-auto mt-10 text-center text-red-500">
-        No report found.
-      </div>
-    );
-  }
+  if (!project) return <div className="p-8">Loading...</div>;
 
   return (
-    <div className="bg-white p-6 rounded shadow max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">📄 Site Report Preview</h1>
+    <div className="max-w-3xl mx-auto p-6 mt-10 border border-gray-300 shadow-md bg-white rounded-xl">
+      <h1 className="text-2xl font-bold mb-4">Report Preview</h1>
 
-      <section className="mb-4">
-        <h2 className="font-semibold text-lg mb-1">Project Metadata</h2>
-        <p><strong>Project:</strong> {project.project_name}</p>
-        <p><strong>Lot:</strong> {project.lot_number}</p>
-        <p><strong>Council:</strong> {project.council}</p>
-        <p><strong>Address:</strong> {project.address}</p>
-        <p><strong>Submitted:</strong> {new Date(project.submitted_at).toLocaleString()}</p>
+      <section className="space-y-2 text-sm">
+        <div><strong>Project Name:</strong> {project.projectName}</div>
+        <div><strong>Name:</strong> {project.firstName} {project.lastName}</div>
+        <div><strong>Address:</strong> {project.street}, {project.suburb} {project.state} {project.postcode}</div>
+        <div><strong>Council:</strong> {project.council}</div>
+        <div><strong>Elevation:</strong> {project.elevation} m</div>
+        <div><strong>Distance to Coast:</strong> {project.distanceToCoast} km</div>
+        <div><strong>Wind Zone:</strong> {project.windZone}</div>
+        <div><strong>BAL Rating:</strong> {project.balRating}</div>
+        <div><strong>Benchmark Levels:</strong> {project.benchmark1}, {project.benchmark2}</div>
+        <div><strong>Footing Recommendation:</strong> {project.footingRecommendation}</div>
+        <div><strong>Risk Summary:</strong> {project.riskSummary}</div>
+        <div><strong>Services Requested:</strong> {project.services.join(', ')}</div>
       </section>
 
-      <section className="mb-4">
-        <h2 className="font-semibold text-lg mb-1">Coordinates & Environmental</h2>
-        <p><strong>Latitude:</strong> {project.lat}</p>
-        <p><strong>Longitude:</strong> {project.lng}</p>
-        <p><strong>Elevation:</strong> {project.elevation ?? 'N/A'} m</p>
-        <p><strong>Distance to Coast:</strong> {project.coastal_distance ?? 'N/A'} km</p>
-      </section>
-
-      <section className="mb-4">
-        <h2 className="font-semibold text-lg mb-1">Services Requested</h2>
-        <p>{project.services}</p>
-      </section>
-
-      <section className="mb-4">
-        <h2 className="font-semibold text-lg mb-1">Risk & Recommendation</h2>
-        <p><strong>Score:</strong> {project.risk_score ?? 'N/A'}/100</p>
-        <p><strong>Category:</strong> {project.risk_category ?? 'N/A'}</p>
-      </section>
-
-      <section className="mt-6">
-        <h2 className="font-semibold text-lg mb-2">Printable PDF View</h2>
-        <a
-          href={`/api/report-pdf?id=${project.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 underline"
+      <div className="mt-6">
+        <button
+          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+          onClick={() => window.print()}
         >
-          View Generated PDF
-        </a>
-      </section>
+          Print / Save as PDF
+        </button>
+      </div>
     </div>
   );
 }
