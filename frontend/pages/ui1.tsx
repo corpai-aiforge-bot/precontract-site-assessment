@@ -61,8 +61,32 @@ export default function UI1Page() {
   };
 
   const handleSubmit = async () => {
-    await submitForm(formData);
+    const result = await submitForm({
+      metadata: {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        lat: formData.lat,
+        lng: formData.lng,
+        council: formData.council,
+        region: formData.region,
+      },
+      services: formData.selectedServices,
+      riskScore: 0, // Replace with actual score if available
+      riskCategory: 'Unknown', // Replace if derived elsewhere
+      elevation: formData.elevation ?? 0,
+      coastalDistance: formData.distanceToCoast ?? 0,
+    });
+
+    if (result.success) {
+      console.log('✅ Form submitted. Project ID:', result.projectId);
+    } else {
+      console.error('❌ Submission failed:', result.error);
+    }
   };
+
 
   return (
     <>
