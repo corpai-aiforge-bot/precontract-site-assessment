@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from backend.utils.elevation_logic import get_elevation_from_google
+from utils.elevation_logic import get_elevation_from_google
 
 router = APIRouter()
 

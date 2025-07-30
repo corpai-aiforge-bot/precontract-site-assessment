@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from backend.utils.google_maps import get_council_name
+from utils.google_maps import get_council_name
 
 router = APIRouter()
 

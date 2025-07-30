@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from backend.utils.google_maps import get_distance_to_coast
+from utils.google_maps import get_distance_to_coast
 
 router = APIRouter()
 
