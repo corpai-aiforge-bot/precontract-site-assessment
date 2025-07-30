@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import submit, benchmark, elevation, geocode, report,report_pdf
+from routes import benchmark, elevation, geocode, report,report_pdf
 
 
 
@@ -20,7 +20,6 @@ app.add_middleware(
 
 # Register all route modules
 app.include_router(report_pdf.router)
-app.include_router(submit.router)
 app.include_router(benchmark.router)
 app.include_router(elevation.router)
 app.include_router(geocode.router)
