@@ -16,6 +16,9 @@ RUN apt-get update && apt-get install -y \
 
 COPY . /app
 
+# ✅ Add this line to fix absolute imports like `from backend.utils...`
+ENV PYTHONPATH=/app
+
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
