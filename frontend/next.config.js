@@ -1,15 +1,10 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
+module.exports = {
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
+        destination: 'https://your-render-backend-url.onrender.com/api/:path*',
       },
     ];
   },
 };
-
-module.exports = nextConfig;
