@@ -1,4 +1,5 @@
-import { supabase } from '../lib/supabaseClient';
+// frontend/utils/formSubmit.ts
+import supabase from '../lib/supabaseClient'; //
 import { v4 as uuidv4 } from 'uuid';
 
 export async function submitForm({
