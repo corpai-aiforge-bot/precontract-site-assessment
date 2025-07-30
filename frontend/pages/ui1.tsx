@@ -39,7 +39,7 @@ export default function PreContractAssessmentForm() {
   });
 
   const handleAddressSelect = (meta: AddressMetadata) => {
-    const { address, council, elevation, distanceToCoast } = meta;
+    const { address, council, elevation, distanceToCoast, windZone, balRating, benchmark1, benchmark2, footingRecommendation, riskSummary } = meta;
     const addressParts = address.split(',').map(p => p.trim());
     setFormData(prev => ({
       ...prev,
@@ -50,7 +50,12 @@ export default function PreContractAssessmentForm() {
       council: council || '',
       elevation: elevation?.toString() || '',
       distanceToCoast: distanceToCoast?.toString() || '',
-      // TODO: set windZone, balRating, benchmarks, etc.
+      windZone: windZone || '',
+      balRating: balRating || '',
+      benchmark1: benchmark1?.toString() || '',
+      benchmark2: benchmark2?.toString() || '',
+      footingRecommendation: footingRecommendation || '',
+      riskSummary: riskSummary || '',
     }));
   };
 
@@ -75,7 +80,7 @@ export default function PreContractAssessmentForm() {
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white shadow-xl border border-gray-300 rounded-xl mt-8 space-y-6">
-      <h1 className="text-2xl font-semibold">PreContract Data Needed</h1>
+      <h1 className="text-2xl font-semibold">PreContract Site Assessment</h1>
 
       <div className="space-y-4">
         <input
