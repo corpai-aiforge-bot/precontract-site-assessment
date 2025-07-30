@@ -1,9 +1,16 @@
-# backend/routes/elevation.py
-
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from backend.utils.elevation_logic import get_elevation_from_google
 
 router = APIRouter()
 
-@router.get("/elevation")
-def get_elevation():
-    return {"message": "Elevation route is active"}
+@router.post("/elevation")
+async def get_elevation(request: Request):
+    data = await request.json()
+    lat = data.get("lat")
+    lng = data.get("lng")
+
+    if lat is None or lng is None:
+        return {"error": "lat/lng required"}, 400
+
+    elevation = get_elevation_from_google(lat, lng)
+    return {"elevation": elevation}

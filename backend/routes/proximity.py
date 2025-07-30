@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Request
-from backend.utils.google_maps import get_council_name
+from backend.utils.google_maps import get_distance_to_coast
 
 router = APIRouter()
 
-@router.post("/geocode")
-async def get_council(request: Request):
+@router.post("/proximity")
+async def get_distance(request: Request):
     data = await request.json()
     lat = data.get("lat")
     lng = data.get("lng")
@@ -12,5 +12,5 @@ async def get_council(request: Request):
     if lat is None or lng is None:
         return {"error": "lat/lng required"}, 400
 
-    council = get_council_name(lat, lng)
-    return {"council": council}
+    distance_km = get_distance_to_coast(lat, lng)
+    return {"distance_km": distance_km}

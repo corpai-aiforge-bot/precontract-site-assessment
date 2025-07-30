@@ -29,7 +29,7 @@ export default function AddressAutocomplete({
     if (!isLoaded || !inputRef.current) return;
 
     const autocomplete = new google.maps.places.Autocomplete(inputRef.current, {
-      types: ['geocode'],
+      types: ['address'],
     });
 
     autocomplete.addListener('place_changed', async () => {
@@ -65,7 +65,8 @@ export default function AddressAutocomplete({
         ref={inputRef}
         type="text"
         placeholder="Enter site address"
-        className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-blue-200"
+        className="w-full max-w-3xl px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-blue-200"
+
       />
     </div>
   );
