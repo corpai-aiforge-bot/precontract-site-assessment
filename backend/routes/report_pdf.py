@@ -1,87 +1,43 @@
 # backend/routes/report_pdf.py
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import StreamingResponse
-from weasyprint import HTML, CSS
-from supabase import create_client, Client
-import os
-import io
+from docx import Document
+from io import BytesIO
+from datetime import datetime
 
 router = APIRouter()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+@router.post("/report/pdf")
+async def generate_pdf(request: Request):
+    data = await request.json()
 
-@router.get("/report-pdf")
-async def generate_report_pdf(request: Request):
-    project_id = request.query_params.get("id")
-    if not project_id:
-        raise HTTPException(status_code=400, detail="Missing project id")
+    doc = Document()
+    doc.add_heading("PreContract Site Assessment Report", 0)
+    doc.add_paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-    result = supabase.from_("projects").select("*").eq("id", project_id).single().execute()
-    if result.error:
-        raise HTTPException(status_code=404, detail="Project not found")
+    doc.add_heading("Project Info", level=1)
+    doc.add_paragraph(f"Project Name: {data.get('projectName')}")
+    doc.add_paragraph(f"Client: {data.get('firstName')} {data.get('lastName')}")
+    doc.add_paragraph(f"Address: {data.get('street')}, {data.get('suburb')} {data.get('state')} {data.get('postcode')}")
 
-    project = result.data
+    doc.add_heading("Geospatial Metadata", level=1)
+    doc.add_paragraph(f"Council: {data.get('council')}")
+    doc.add_paragraph(f"Elevation: {data.get('elevation')} m")
+    doc.add_paragraph(f"Distance to Coast: {data.get('distanceToCoast')} km")
+    doc.add_paragraph(f"Wind Zone: {data.get('windZone')}")
+    doc.add_paragraph(f"BAL Rating: {data.get('balRating')}")
+    doc.add_paragraph(f"Benchmarks: {data.get('benchmark1')}, {data.get('benchmark2')}")
 
-    html_content = f"""
-    <html>
-    <head>
-        <style>
-            body {{ font-family: Arial, sans-serif; padding: 40px; color: #333; }}
-            header {{ text-align: center; margin-bottom: 40px; }}
-            img.logo {{ height: 80px; }}
-            h1 {{ color: #2c3e50; font-size: 22px; }}
-            .section {{ margin-bottom: 20px; }}
-            .label {{ font-weight: bold; }}
-            .footer {{ margin-top: 60px; font-size: 0.9em; color: #555; }}
-        </style>
-    </head>
-    <body>
-        <header>
-            <img src="file://{os.getcwd()}/frontend/public/assets/gbta-logo.jpg" class="logo" />
-            <h1>PreContract Site Risk Report</h1>
-        </header>
+    doc.add_heading("Assessment", level=1)
+    doc.add_paragraph(f"Footing Recommendation: {data.get('footingRecommendation')}")
+    doc.add_paragraph(f"Risk Summary: {data.get('riskSummary')}")
+    doc.add_paragraph(f"Services Requested: {', '.join(data.get('services', []))}")
 
-        <div class="section">
-            <p><span class="label">Project:</span> {project['project_name']}</p>
-            <p><span class="label">Lot:</span> {project['lot_number']}</p>
-            <p><span class="label">Council:</span> {project['council']}</p>
-            <p><span class="label">Address:</span> {project['address']}</p>
-            <p><span class="label">Submitted:</span> {project['submitted_at']}</p>
-        </div>
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
 
-        <div class="section">
-            <p><span class="label">Latitude:</span> {project['lat']}</p>
-            <p><span class="label">Longitude:</span> {project['lng']}</p>
-            <p><span class="label">Elevation:</span> {project['elevation'] or 'N/A'} m</p>
-            <p><span class="label">Distance to Coast:</span> {project['coastal_distance'] or 'N/A'} km</p>
-        </div>
-
-        <div class="section">
-            <p><span class="label">Services Requested:</span> {project['services']}</p>
-        </div>
-
-        <div class="section">
-            <p><span class="label">Risk Score:</span> {project['risk_score']}/100</p>
-            <p><span class="label">Risk Category:</span> {project['risk_category']}</p>
-        </div>
-
-        <div class="footer">
-            <p>Prepared by:</p>
-            <p><strong>Dennis McMahon</strong><br>
-            CEO, Global Buildtech Australia Pty Ltd<br>
-            dennis.mcmahon@global-buildtech.com<br>
-            www.global-buildtech.com</p>
-        </div>
-    </body>
-    </html>
-    """
-
-    pdf_io = io.BytesIO()
-    HTML(string=html_content).write_pdf(pdf_io)
-    pdf_io.seek(0)
-
-    return StreamingResponse(pdf_io, media_type="application/pdf", headers={
-        "Content-Disposition": f"inline; filename=site_report_{project_id}.pdf"
-    })
+    headers = {
+        'Content-Disposition': 'inline; filename="precontract-site-report.docx"'
+    }
+    return StreamingResponse(buffer, media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document', headers=headers)
