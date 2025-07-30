@@ -10,7 +10,7 @@ app = FastAPI()
 # Allow all origins for development (lock down in production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict in production
+    allow_origins=["https://your-vercel-frontend.vercel.app"],  # Restrict in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
