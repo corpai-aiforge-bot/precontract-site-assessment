@@ -133,7 +133,7 @@ export default function UI1Page() {
         </div>
 
         {/* Address Autocomplete */}
-        <AddressAutocomplete onMetadata={handleAddressMetadata} />
+        <AddressAutocomplete onSelect={handleAddressMetadata} />
 
         {/* Auto-Filled Metadata Preview */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-6 text-sm text-gray-600">
