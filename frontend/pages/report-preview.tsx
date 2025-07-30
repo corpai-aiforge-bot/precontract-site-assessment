@@ -31,6 +31,21 @@ export default function ReportPreview() {
       .catch(() => setProject(null));
   }, []);
 
+  const downloadReport = async () => {
+    const res = await fetch('/api/report-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(project),
+    });
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'precontract-report.docx';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   if (!project) return <div className="p-8">Loading...</div>;
 
   return (
@@ -52,12 +67,18 @@ export default function ReportPreview() {
         <div><strong>Services Requested:</strong> {project.services.join(', ')}</div>
       </section>
 
-      <div className="mt-6">
+      <div className="mt-6 space-x-4">
         <button
           className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
           onClick={() => window.print()}
         >
-          Print / Save as PDF
+          Print
+        </button>
+        <button
+          className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
+          onClick={downloadReport}
+        >
+          Download Report (.docx)
         </button>
       </div>
     </div>
