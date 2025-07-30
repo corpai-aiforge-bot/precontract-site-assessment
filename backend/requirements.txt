@@ -47,3 +47,7 @@ aiofiles         # for file handling in FastAPI
 jinja2           # useful for templating if needed
 loguru           # better logging
 apscheduler      # optional scheduling
+
+# --- PDF Rendering ---
+weasyprint
+
