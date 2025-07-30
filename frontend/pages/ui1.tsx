@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ProjectMetadataForm from '../components/ProjectMetadataForm';
 import ServiceChecklist from '../components/ServiceChecklist';
-import AddressAutocomplete from '../components/AddressAutocomplete';
+import AddressAutocomplete from '../components/addressAutocomplete';
 import AdvancedFootingAssessor from '../components/AdvancedFootingAssessor';
 import { submitForm } from '../utils/formSubmit';
 import Layout from '../components/Layout';
