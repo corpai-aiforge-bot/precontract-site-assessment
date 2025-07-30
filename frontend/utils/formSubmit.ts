@@ -1,4 +1,3 @@
-// frontend/utils/formSubmit.ts
 import { supabase } from '../lib/supabaseClient';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -18,7 +17,7 @@ export async function submitForm({
   coastalDistance: number;
 }) {
   try {
-    // Try to find existing client_id for this email
+    // Check if client already exists based on email
     const { data: existingClient, error: lookupError } = await supabase
       .from('projects')
       .select('client_id')
@@ -41,14 +40,23 @@ export async function submitForm({
         elevation,
         coastal_distance: coastalDistance,
       },
-    ]);
+    ]).select('id'); // <- return id of inserted row
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (error || !data || !data[0]?.id) {
+      return {
+        success: false,
+        error: error?.message || 'Insert failed or missing ID',
+      };
     }
 
-    return { success: true, data };
+    return {
+      success: true,
+      projectId: data[0].id,
+    };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    return {
+      success: false,
+      error: err.message || 'Unknown error',
+    };
   }
 }
