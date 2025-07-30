@@ -1,184 +1,140 @@
-import { useState } from 'react';
+// pages/ui1.tsx
+
+import React, { useState } from 'react';
+import Head from 'next/head';
+import AddressAutocomplete from '../components/addressAutocomplete';
 import ProjectMetadataForm from '../components/ProjectMetadataForm';
 import ServiceChecklist from '../components/ServiceChecklist';
-import AddressAutocomplete from '../components/addressAutocomplete';
-import AdvancedFootingAssessor from '../components/AdvancedFootingAssessor';
 import { submitForm } from '../utils/formSubmit';
-import Layout from '../components/Layout';
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  lat?: number;
+  lng?: number;
+  council?: string;
+  region?: string;
+  elevation?: number;
+  distanceToCoast?: number;
+  projectName: string;
+  lotNumber: string;
+  selectedServices: string[];
+}
 
 export default function UI1Page() {
-  const [metadata, setMetadata] = useState<any>({
-    project_name: '',
-    lot_number: '',
-    council: '',
-    address: '',
-    first_name: '',
-    last_name: '',
+  const [formData, setFormData] = useState<FormData>({
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
+    address: '',
+    projectName: '',
+    lotNumber: '',
+    selectedServices: [],
   });
 
-  const [services, setServices] = useState<string[]>([]);
-  const [riskScore, setRiskScore] = useState(82);
-  const [riskCategory, setRiskCategory] = useState('LOW RISK – Steel Recommended');
-  const [elevation, setElevation] = useState(12.3);
-  const [coastalDistance, setCoastalDistance] = useState(2.7);
-  const [status, setStatus] = useState('');
-  const [submittedProjectId, setSubmittedProjectId] = useState<string | null>(null);
+  const handleAddressMetadata = (metadata: Partial<FormData>) => {
+    setFormData((prev) => ({
+      ...prev,
+      ...metadata,
+    }));
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleServiceChange = (services: string[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      selectedServices: services,
+    }));
+  };
 
   const handleSubmit = async () => {
-    setStatus('Submitting...');
-    const result = await submitForm({
-      metadata,
-      services,
-      riskScore,
-      riskCategory,
-      elevation,
-      coastalDistance,
-    });
-    if (result.success && result.projectId) {
-      setSubmittedProjectId(result.projectId);
-      setStatus('Submitted successfully!');
-    } else {
-      setStatus(`Error: ${result.error}`);
-    }
-  };
-
-  const loadDemoProject = () => {
-    setSubmittedProjectId(null);
-    setMetadata({
-      first_name: 'Alicia',
-      last_name: 'Brown-Test',
-      email: 'mcmdennis@gmail.com',
-      phone: '+61400111222',
-      project_name: 'Demo SDA Site - Magnetic Island',
-      lot_number: '31',
-      council: 'City of Onkaparinga Council',
-      address: '36 Story Avenue, Aldinga Beach SA 5173',
-      lat: -35.2754,
-      lng: 138.4718,
-      notes: 'Testing precontract setup',
-      soilResistivity: 3500,
-      soilPH: 7.2,
-      wind: 'offshore',
-      topography: 'partial',
-      rainfall: 'medium',
-      footingCount: 8,
-    });
-    setServices(['Soil Testing', 'Contour & Feature Survey', 'BAL Assessment']);
-    setRiskScore(82);
-    setRiskCategory('LOW RISK – Steel Recommended');
-    setElevation(12.3);
-    setCoastalDistance(2.7);
-    setStatus('Demo project loaded');
-  };
-
-  const handleEdit = () => {
-    setSubmittedProjectId(null);
-    setStatus('');
+    await submitForm(formData);
   };
 
   return (
-    <Layout title="UI1 – Site Assessment Form">
-      <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow">
+    <>
+      <Head>
+        <title>PreContract Site Assessment</title>
+      </Head>
+      <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg">
         <h1 className="text-2xl font-bold mb-4">📋 PreContract Site Assessment</h1>
 
-        {/* After submission: show PDF preview */}
-        {submittedProjectId ? (
-          <div className="space-y-4">
-            <p className="text-green-600 text-sm">{status}</p>
-            <iframe
-              src={`/api/report-pdf?id=${submittedProjectId}`}
-              title="PDF Preview"
-              className="w-full h-[700px] border rounded shadow"
-            />
-            <button
-              onClick={handleEdit}
-              className="bg-yellow-500 text-white px-4 py-2 rounded"
-            >
-              ← Back to Edit
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Contact Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <input
-                type="text"
-                placeholder="First Name"
-                className="input"
-                value={metadata.first_name || ''}
-                onChange={(e) => setMetadata((prev: any) => ({ ...prev, first_name: e.target.value }))}
-              />
-              <input
-                type="text"
-                placeholder="Last Name"
-                className="input"
-                value={metadata.last_name || ''}
-                onChange={(e) => setMetadata((prev: any) => ({ ...prev, last_name: e.target.value }))}
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                className="input"
-                value={metadata.email || ''}
-                onChange={(e) => setMetadata((prev: any) => ({ ...prev, email: e.target.value }))}
-              />
-              <input
-                type="tel"
-                placeholder="Phone Number"
-                className="input"
-                value={metadata.phone || ''}
-                onChange={(e) => setMetadata((prev: any) => ({ ...prev, phone: e.target.value }))}
-              />
-            </div>
+        {/* Contact Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <input
+            type="text"
+            name="firstName"
+            placeholder="First Name"
+            value={formData.firstName}
+            onChange={handleInputChange}
+            className="border rounded p-2 w-full"
+          />
+          <input
+            type="text"
+            name="lastName"
+            placeholder="Last Name"
+            value={formData.lastName}
+            onChange={handleInputChange}
+            className="border rounded p-2 w-full"
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleInputChange}
+            className="border rounded p-2 w-full"
+          />
+          <input
+            type="tel"
+            name="phone"
+            placeholder="Phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            className="border rounded p-2 w-full"
+          />
+        </div>
 
-            {/* Address Autocomplete */}
-            <AddressAutocomplete
-              onSelect={({ address, lat, lng }) =>
-                setMetadata((prev: any) => ({ ...prev, address, lat, lng }))
-              }
-            />
+        {/* Address Autocomplete */}
+        <AddressAutocomplete onMetadata={handleAddressMetadata} />
 
-            {/* Metadata & Services */}
-            <ProjectMetadataForm metadata={metadata} setMetadata={setMetadata} />
-            <ServiceChecklist selectedServices={services} setSelectedServices={setServices} />
+        {/* Auto-Filled Metadata Preview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 mb-6 text-sm text-gray-600">
+          <div>Council: <strong>{formData.council || '—'}</strong></div>
+          <div>Region: <strong>{formData.region || '—'}</strong></div>
+          <div>Elevation: <strong>{formData.elevation ?? '—'} m</strong></div>
+          <div>Distance to Coast: <strong>{formData.distanceToCoast ?? '—'} km</strong></div>
+        </div>
 
-            {/* Risk Estimator */}
-            {metadata.lat && metadata.lng && (
-              <AdvancedFootingAssessor
-                lat={metadata.lat}
-                lon={metadata.lng}
-                resistivity={metadata.soilResistivity || 0}
-                soilPH={metadata.soilPH || 7}
-                wind={metadata.wind || 'unknown'}
-                topography={metadata.topography || 'none'}
-                rainfall={metadata.rainfall || 'medium'}
-                footingCount={metadata.footingCount || 1}
-              />
-            )}
+        {/* Project Metadata */}
+        <ProjectMetadataForm formData={formData} onChange={handleInputChange} />
 
-            {/* Actions */}
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={handleSubmit}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                Submit
-              </button>
-              <button
-                onClick={loadDemoProject}
-                className="bg-gray-300 text-black px-4 py-2 rounded"
-              >
-                Load Demo Project
-              </button>
-            </div>
+        {/* Services Checklist */}
+        <ServiceChecklist
+          selectedServices={formData.selectedServices}
+          onChange={handleServiceChange}
+        />
 
-            {/* Status */}
-            {status && <p className="mt-3 text-sm text-gray-700">{status}</p>}
-          </>
-        )}
+        <button
+          onClick={handleSubmit}
+          className="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Submit
+        </button>
       </div>
-    </Layout>
+    </>
   );
 }

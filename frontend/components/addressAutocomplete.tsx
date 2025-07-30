@@ -1,50 +1,66 @@
-// components/AddressAutocomplete.tsx
-import { useEffect, useRef } from 'react';
+// components/addressAutocomplete.tsx
 
-interface Props {
-  onSelect: (data: {
-    address: string;
-    lat: number;
-    lng: number;
-  }) => void;
+import React, { useState } from 'react';
+import { GooglePlaceAutocomplete } from 'react-google-place-autocomplete'; // or replace with your component
+import axios from 'axios';
+
+interface AddressMetadata {
+  address: string;
+  lat: number;
+  lng: number;
+  elevation?: number;
+  distanceToCoast?: number;
+  council?: string;
+  region?: string;
 }
 
-export default function AddressAutocomplete({ onSelect }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
+interface Props {
+  onMetadata: (data: AddressMetadata) => void;
+}
 
-  useEffect(() => {
-    if (!window.google || !window.google.maps || !window.google.maps.places) return;
-    if (!inputRef.current) return;
+const AddressAutocomplete: React.FC<Props> = ({ onMetadata }) => {
+  const [selectedAddress, setSelectedAddress] = useState<string>('');
 
-    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-      types: ['geocode'],
-      componentRestrictions: { country: 'au' },
-    });
+  const handleSelect = async (address: string, lat: number, lng: number) => {
+    setSelectedAddress(address);
 
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (!place.geometry || !place.geometry.location) return;
+    try {
+      const [
+        elevationRes,
+        proximityRes,
+        geocodeRes
+      ] = await Promise.all([
+        axios.post('/api/elevation', { lat, lng }),
+        axios.post('/api/proximity', { lat, lng }),
+        axios.post('/api/geocode', { lat, lng })
+      ]);
 
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
-
-      onSelect({
-        address: place.formatted_address || '',
+      const metadata: AddressMetadata = {
+        address,
         lat,
         lng,
-      });
-    });
-  }, [onSelect]);
+        elevation: elevationRes.data.elevation,
+        distanceToCoast: proximityRes.data.distanceToCoast,
+        council: geocodeRes.data.council,
+        region: geocodeRes.data.region,
+      };
+
+      onMetadata(metadata);
+    } catch (error) {
+      console.error('Error fetching address metadata:', error);
+      onMetadata({ address, lat, lng }); // fallback: basic info only
+    }
+  };
 
   return (
     <div className="mb-4">
-      <label className="block mb-1 font-medium text-sm">📍 Site Address</label>
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder="Start typing address..."
-        className="w-full p-2 border border-gray-300 rounded shadow-sm"
+      <label className="block text-sm font-medium text-gray-700">📍 Site Address</label>
+      <GooglePlaceAutocomplete
+        onSelect={({ address, lat, lng }) => handleSelect(address, lat, lng)}
+        placeholder="Enter site address"
       />
     </div>
   );
-}
+};
+
+export default AddressAutocomplete;
