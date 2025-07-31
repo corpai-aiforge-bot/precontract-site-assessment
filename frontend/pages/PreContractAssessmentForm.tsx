@@ -153,25 +153,27 @@ export default function PreContractAssessmentForm() {
     }
   }
 
-  async function fetchBenchmarks(lat: number, lng: number, state: string = 'sa'): Promise<{ benchmark1: number; benchmark2: number } | null> {
+
+
+
+
+  async function fetchBenchmarks(lat: number, lng: number): Promise<{ benchmark1: number | null; benchmark2: number | null }> {
     try {
-      const query = state ? `/api/benchmarks?lat=${lat}&lng=${lng}&state=${state}` : `/api/benchmarks?lat=${lat}&lng=${lng}`;
-      const res = await fetch(query, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!res.ok) {
-        console.error(`Benchmarks API failed: ${res.status}`);
-        return null;
+      const { data, error } = await supabase.rpc('nearest_benchmarks', { lat, lng });
+
+      if (error) {
+        console.error('Benchmark RPC error:', error.message);
+        return { benchmark1: null, benchmark2: null };
       }
-      const json = await res.json();
+
+      const [bm1, bm2] = data || [];
       return {
-        benchmark1: json[0]?.height ?? null,
-        benchmark2: json[1]?.height ?? null,
+        benchmark1: bm1?.elevation ?? null,
+        benchmark2: bm2?.elevation ?? null,
       };
     } catch (err) {
-      console.error('Error fetching benchmarks:', err);
-      return null;
+      console.error('Unexpected error during benchmark fetch:', err);
+      return { benchmark1: null, benchmark2: null };
     }
   }
 
