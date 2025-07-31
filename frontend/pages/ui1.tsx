@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AddressAutocomplete from '@/components/addressAutocomplete';
 import supabase from '@/lib/supabaseClient';
-import '@/styles/ui1.scss'; // import SCSS
+
 
 interface AddressMetadata {
   address: string;

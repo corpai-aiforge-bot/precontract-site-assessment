@@ -3,6 +3,8 @@ import Head from 'next/head';
 import '../styles/main.scss'
 import type { AppProps } from 'next/app'
 import Layout from '../components/Layout';
+import '@/styles/ui1.scss'
+
 
 
 
