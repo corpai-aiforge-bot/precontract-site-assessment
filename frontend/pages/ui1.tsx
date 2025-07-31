@@ -1,8 +1,8 @@
 // frontend/pages/ui1.tsx
-import { useState } from 'react';
-import AddressAutocomplete from '../components/addressAutocomplete';
-import { supabase } from '@/utils/supabaseClient';
 
+import { useState } from "react";
+import AddressAutocomplete from "@/components/addressAutocomplete";
+import { supabase } from "@/utils/supabaseClient";
 
 interface AddressMetadata {
   address: string;
@@ -41,51 +41,99 @@ export default function PreContractAssessmentForm() {
   });
 
   async function fetchCouncilName(postcode: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('councils_by_postcode')
-    .select('lga_region')
-    .eq('postcode', postcode)
-    .limit(1)
-    .single();
+    const { data, error } = await supabase
+      .from('councils_by_postcode')
+      .select('lga_region')
+      .eq('postcode', postcode)
+      .limit(1)
+      .single();
 
-  if (error) {
-    console.error("Error fetching council:", error);
-    return null;
+    if (error) {
+      console.error("Error fetching council:", error);
+      return null;
+    }
+
+    return data?.lga_region || null;
   }
 
-  return data?.lga_region || null;
-}
+  async function fetchElevation(lat: number, lng: number): Promise<number | null> {
+    const res = await fetch('/api/elevation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng }),
+    });
 
+    if (!res.ok) {
+      console.error("Elevation fetch failed:", await res.text());
+      return null;
+    }
 
-    const handleAddressSelect = async (meta: AddressMetadata) => {
-      const { address, lat, lng } = meta;
-      const addressParts = address.split(',').map(p => p.trim());
+    const { elevation } = await res.json();
+    return elevation;
+  }
 
-      const suburb = addressParts[1] || '';
-      const state = addressParts[2]?.split(' ')[0] || '';
-      const postcode = addressParts[2]?.split(' ')[1] || '';
+  async function fetchDistanceToCoast(lat: number, lng: number): Promise<number | null> {
+    const res = await fetch('/api/proximity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng }),
+    });
 
-      const council = await fetchCouncilName(postcode);
-      const elevation = await fetchElevation(lat, lng);
-      const distanceToCoast = await fetchDistanceToCoast(lat, lng);
+    if (!res.ok) {
+      console.error("Distance to coast fetch failed:", await res.text());
+      return null;
+    }
 
-      setFormData(prev => ({
-        ...prev,
-        street: addressParts[0] || '',
-        suburb,
-        state,
-        postcode,
-        council: council || '',
-        elevation: elevation?.toString() || '',
-        distanceToCoast: distanceToCoast?.toString() || '',
-        windZone: '',               // next step
-        balRating: '',              // manual
-        benchmark1: '',             // todo
-        benchmark2: '',             // todo
-        footingRecommendation: '',  // todo
-        riskSummary: '',            // todo
-      }));
-  const { benchmark1, benchmark2 } = await fetchBenchmarks(suburb, postcode);
+    const { distanceToCoast } = await res.json();
+    return distanceToCoast;
+  }
+
+  async function fetchWindZone(lat: number, lng: number): Promise<string | null> {
+    const res = await fetch('/api/windzone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng }),
+    });
+
+    if (!res.ok) {
+      console.error("Windzone fetch failed:", await res.text());
+      return null;
+    }
+
+    const { windZone } = await res.json();
+    return windZone;
+  }
+
+  async function fetchBenchmarks(suburb: string, postcode: string): Promise<{ benchmark1: number | null, benchmark2: number | null }> {
+    const res = await fetch('/api/benchmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ suburb, postcode }),
+    });
+
+    if (!res.ok) {
+      console.error("Benchmark fetch failed:", await res.text());
+      return { benchmark1: null, benchmark2: null };
+    }
+
+    return await res.json();
+  }
+
+  const handleAddressSelect = async (meta: AddressMetadata) => {
+    const { address, lat, lng } = meta;
+    const addressParts = address.split(',').map(p => p.trim());
+
+    const suburb = addressParts[1] || '';
+    const state = addressParts[2]?.split(' ')[0] || '';
+    const postcode = addressParts[2]?.split(' ')[1] || '';
+
+    const [council, elevation, distanceToCoast, windZone, benchmarks] = await Promise.all([
+      fetchCouncilName(postcode),
+      fetchElevation(lat, lng),
+      fetchDistanceToCoast(lat, lng),
+      fetchWindZone(lat, lng),
+      fetchBenchmarks(suburb, postcode)
+    ]);
 
     setFormData(prev => ({
       ...prev,
@@ -96,17 +144,14 @@ export default function PreContractAssessmentForm() {
       council: council || '',
       elevation: elevation?.toString() || '',
       distanceToCoast: distanceToCoast?.toString() || '',
-      windZone: '', // todo
-      balRating: '', // manual
-      benchmark1: benchmark1?.toString() || '',
-      benchmark2: benchmark2?.toString() || '',
-      footingRecommendation: '',  // derived later
-      riskSummary: '',            // derived later
+      windZone: windZone || '',
+      benchmark1: benchmarks.benchmark1?.toString() || '',
+      benchmark2: benchmarks.benchmark2?.toString() || '',
+      balRating: '',
+      footingRecommendation: '',
+      riskSummary: ''
     }));
-
-    };
-
-
+  };
 
   const handleServiceToggle = (service: string) => {
     setFormData(prev => ({
@@ -117,59 +162,7 @@ export default function PreContractAssessmentForm() {
     }));
   };
 
-async function fetchElevation(lat: number, lng: number): Promise<number | null> {
-  const res = await fetch('/api/elevation', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lat, lng }),
-  });
-
-  if (!res.ok) {
-    console.error("Elevation fetch failed:", await res.text());
-    return null;
-  }
-
-  const { elevation } = await res.json();
-  return elevation;
-}
-
-
-  async function fetchBenchmarks(suburb: string, postcode: string): Promise<{ benchmark1: number | null, benchmark2: number | null }> {
-  const res = await fetch('/api/benchmarks', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ suburb, postcode }),
-  });
-
-  if (!res.ok) {
-    console.error("Benchmark fetch failed:", await res.text());
-    return { benchmark1: null, benchmark2: null };
-  }
-
-  return await res.json();
-}
-
-
-
-  async function fetchDistanceToCoast(lat: number, lng: number): Promise<number | null> {
-  const res = await fetch('/api/proximity', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lat, lng }),
-  });
-
-  if (!res.ok) {
-    console.error("Distance to coast fetch failed:", await res.text());
-    return null;
-  }
-
-  const { distanceToCoast } = await res.json();
-  return distanceToCoast;
-}
-
-
   const handleSubmit = async () => {
-    // Post data to Supabase or backend, then redirect
     const res = await fetch('/api/store-project', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -190,8 +183,18 @@ async function fetchElevation(lat: number, lng: number): Promise<number | null> 
           className="w-full p-2 border rounded"
         />
         <div className="grid grid-cols-1 gap-4">
-          <input placeholder="First Name" value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="p-2 border rounded" />
-          <input placeholder="Last Name" value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="p-2 border rounded" />
+          <input
+            placeholder="First Name"
+            value={formData.firstName}
+            onChange={e => setFormData({ ...formData, firstName: e.target.value })}
+            className="p-2 border rounded"
+          />
+          <input
+            placeholder="Last Name"
+            value={formData.lastName}
+            onChange={e => setFormData({ ...formData, lastName: e.target.value })}
+            className="p-2 border rounded"
+          />
         </div>
 
         <AddressAutocomplete onSelect={handleAddressSelect} />
@@ -203,6 +206,24 @@ async function fetchElevation(lat: number, lng: number): Promise<number | null> 
           <input placeholder="Postcode" value={formData.postcode} className="p-2 border rounded" readOnly />
         </div>
       </div>
+
+      <div className="mt-4">
+        <label className="block text-sm font-medium text-gray-700 mb-1">BAL Rating</label>
+        <select
+          value={formData.balRating}
+          onChange={e => setFormData({ ...formData, balRating: e.target.value })}
+          className="w-full p-2 border rounded"
+        >
+          <option value="">Select BAL Rating</option>
+          <option value="BAL-LOW">BAL-LOW</option>
+          <option value="BAL-12.5">BAL-12.5</option>
+          <option value="BAL-19">BAL-19</option>
+          <option value="BAL-29">BAL-29</option>
+          <option value="BAL-40">BAL-40</option>
+          <option value="BAL-FZ">BAL-FZ</option>
+        </select>
+      </div>
+
 
       <div className="space-y-2 text-sm text-gray-700">
         <div><strong>Council:</strong> {formData.council || '—'}</div>

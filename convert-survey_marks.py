@@ -1,42 +1,43 @@
+# convert-windzones.py
 import json
 import csv
 from pathlib import Path
 
-# Use your exact file paths
-INPUT_FILE = r"C:\Users\denni\Downloads\South Australian SurveyMarks_geojson\SurveyMarks_GDA2020.geojson"
-OUTPUT_FILE = r"C:\Users\denni\PycharmProjects\PreContract_Site_Assessment\backend\data\full_survey_benchmarks.csv"
+INPUT_FILE = r"C:\Users\denni\Downloads\1170 windzones ausralia 146359_01_0\as1170windzones.json"
+OUTPUT_FILE = r"C:\Users\denni\PycharmProjects\PreContract_Site_Assessment\backend\data\as1170_windzones.csv"
 
-# Load GeoJSON
 with open(INPUT_FILE, "r", encoding="utf-8") as f:
     geojson = json.load(f)
 
-# Collect all unique property keys
-all_headers = set()
+headers = set()
 for feature in geojson["features"]:
-    props = feature.get("properties", {})
-    all_headers.update(props.keys())
+    headers.update(feature.get("properties", {}).keys())
+headers.update(["lat", "lng"])
+headers = sorted(headers)
 
-# Add geometry fields
-all_headers.update(["lat", "lng"])
-all_headers = sorted(all_headers)
-
-# Write full CSV
-with open(OUTPUT_FILE, "w", newline='', encoding="utf-8") as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames=all_headers)
+with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as csvfile:
+    writer = csv.DictWriter(csvfile, fieldnames=headers)
     writer.writeheader()
 
     for feature in geojson["features"]:
         props = feature.get("properties", {})
-        geom = feature.get("geometry", {})
-        coords = geom.get("coordinates", [])
-
+        coords = feature.get("geometry", {}).get("coordinates", [])
         if not coords:
             continue
 
-        row = {key: props.get(key, "") for key in all_headers}
-        row["lng"] = coords[0]
-        row["lat"] = coords[1]
+        row = {key: props.get(key, "") for key in headers}
+
+        # Handle polygon geometry for centroid extraction
+        if feature["geometry"]["type"] == "Polygon":
+            lngs = [pt[0] for pt in coords[0]]
+            lats = [pt[1] for pt in coords[0]]
+            row["lng"] = sum(lngs) / len(lngs)
+            row["lat"] = sum(lats) / len(lats)
+        else:
+            row["lng"] = coords[0]
+            row["lat"] = coords[1]
 
         writer.writerow(row)
 
-print(f"✅ Done! Wrote {len(geojson['features'])} rows to:\n{OUTPUT_FILE}")
+print(f"✅ Converted {len(geojson['features'])} features to CSV.")
+print(f"📄 Output: {OUTPUT_FILE}")

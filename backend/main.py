@@ -1,7 +1,8 @@
 # backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import benchmark, elevation, geocode, report, report_pdf, proximity  # 👈 Add proximity
+from routes import benchmark, elevation, geocode, report, report_pdf, proximity,windzones  # 👈 Add proximity
+
 
 
 app = FastAPI()
@@ -22,3 +23,4 @@ app.include_router(geocode.router, prefix="/api")
 app.include_router(proximity.router, prefix="/api")  # 👈 Add this
 app.include_router(report.router, prefix="/api")
 app.include_router(report_pdf.router, prefix="/api")
+app.include_router(windzones.router)
