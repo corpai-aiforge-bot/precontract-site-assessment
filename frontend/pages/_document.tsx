@@ -6,14 +6,7 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          {/* Google Maps JS API with Places Library */}
-          {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
-            <script
-              src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly&region=AU`}
-              async
-              defer
-            />
-          )}
+          {/* Head content like meta, favicon, fonts, etc. */}
         </Head>
         <body>
           <Main />

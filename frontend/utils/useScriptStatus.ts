@@ -11,41 +11,38 @@ export function useScriptStatus(src: string): 'loading' | 'ready' | 'error' {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   useEffect(() => {
-    if (!src) {
-      setStatus('error');
+    const existing = document.querySelector(`script[src="${src}"]`) as HTMLScriptElement | null;
+
+    if (existing) {
+      if (existing.getAttribute('data-status') === 'ready') {
+        setStatus('ready');
+      } else if (existing.getAttribute('data-status') === 'error') {
+        setStatus('error');
+      } else {
+        setStatus('loading');
+        existing.addEventListener('load', () => setStatus('ready'));
+        existing.addEventListener('error', () => setStatus('error'));
+      }
       return;
     }
 
-    // Check if script already exists
-    let script = document.querySelector(`script[src="${src}"]`) as HTMLScriptElement;
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.defer = true;
+    script.setAttribute('data-status', 'loading');
 
-    if (!script) {
-      // Create new script
-      script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-      script.defer = true;
-      script.setAttribute('data-status', 'loading');
-      document.head.appendChild(script);
-    } else {
-      // Grab existing status if reusing
-      setStatus(script.getAttribute('data-status') as 'loading' | 'ready' | 'error');
-    }
-
-    // Event listeners to update status
-    const setAttributeFromEvent = (event: Event) => {
-      const eventType = event.type === 'load' ? 'ready' : 'error';
-      script.setAttribute('data-status', eventType);
-      setStatus(eventType);
+    script.onload = () => {
+      script.setAttribute('data-status', 'ready');
+      setStatus('ready');
     };
 
-    script.addEventListener('load', setAttributeFromEvent);
-    script.addEventListener('error', setAttributeFromEvent);
-
-    return () => {
-      script.removeEventListener('load', setAttributeFromEvent);
-      script.removeEventListener('error', setAttributeFromEvent);
+    script.onerror = () => {
+      script.setAttribute('data-status', 'error');
+      setStatus('error');
     };
+
+    document.body.appendChild(script);
   }, [src]);
 
   return status;
