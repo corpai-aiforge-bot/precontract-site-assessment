@@ -1,6 +1,6 @@
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 
-export default function FallbackAutocomplete({ onSelect }: { onSelect: (meta: { address: string; lat: number; lng: number }) => void }) {
+export default function FallbackAutocomplete({ onSelect }: { onSelect: (meta: { address: string; lat: number; lng: number; postcode?: string; suburb?: string; state?: string; }) => void }) {
   const {
     ready,
     value,
@@ -14,7 +14,19 @@ export default function FallbackAutocomplete({ onSelect }: { onSelect: (meta: { 
     clearSuggestions();
     const results = await getGeocode({ address });
     const { lat, lng } = await getLatLng(results[0]);
-    onSelect({ address, lat, lng });
+
+    const components = results[0]?.address_components || [];
+    const get = (type: string) =>
+      components.find((c: any) => c.types.includes(type))?.long_name || "";
+
+    onSelect({
+      address,
+      lat,
+      lng,
+      postcode: get("postal_code"),
+      suburb: get("locality") || get("sublocality"),
+      state: get("administrative_area_level_1"),
+    });
   };
 
   return (

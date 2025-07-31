@@ -120,12 +120,7 @@ export default function PreContractAssessmentForm() {
   }
 
   const handleAddressSelect = async (meta: AddressMetadata) => {
-    const { address, lat, lng } = meta;
-    const addressParts = address.split(',').map(p => p.trim());
-
-    const suburb = addressParts[1] || '';
-    const state = addressParts[2]?.split(' ')[0] || '';
-    const postcode = addressParts[2]?.split(' ')[1] || '';
+    const { address, lat, lng, postcode = '', suburb = '', state = '' } = meta;
 
     const [council, elevation, distanceToCoast, windZone, benchmarks] = await Promise.all([
       fetchCouncilName(postcode),
@@ -137,7 +132,7 @@ export default function PreContractAssessmentForm() {
 
     setFormData(prev => ({
       ...prev,
-      street: addressParts[0] || '',
+      street: address,
       suburb,
       state,
       postcode,
