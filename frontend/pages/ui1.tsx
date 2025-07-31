@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AddressAutocomplete from "@/components/addressAutocomplete";
-import { }supabase from "@/lib/supabaseClient";
+import supabase from "@/lib/supabaseClient";
 
 interface AddressMetadata {
   address: string;
