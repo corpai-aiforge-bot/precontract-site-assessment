@@ -1,5 +1,6 @@
 // components/newAddressAutocomplete.tsx
 import { useEffect, useRef } from 'react';
+import Script from 'next/script';
 import { useScriptStatus } from '@/utils/useScriptStatus';
 
 interface AddressMetadata {
