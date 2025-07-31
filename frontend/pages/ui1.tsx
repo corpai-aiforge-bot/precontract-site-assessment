@@ -172,8 +172,8 @@ export default function PreContractAssessmentForm() {
             <p><strong>Latitude:</strong> {formData.lat || '—'}°</p>
             <p><strong>Longitude:</strong> {formData.lng || '—'}°</p>
             <FootingRiskDisplay
-              elevation={parseFloat(formData.elevation || '0')}
-              distanceToCoast={parseFloat(formData.distanceToCoast || '0')}
+              elevation={parseFloat(String(formData.elevation || '0'))}
+              distanceToCoast={parseFloat(String(formData.distanceToCoast || '0'))}
               onRiskUpdate={({ score, category }) =>
                 setFormData((prev) => ({
                   ...prev,
