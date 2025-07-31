@@ -1,6 +1,14 @@
-import "../types/global";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'gmpx-place-autocomplete': any;
+    }
+  }
+}
+
 
 const FallbackAutocomplete = dynamic(() => import("./FallbackAutocomplete"), { ssr: false });
 
