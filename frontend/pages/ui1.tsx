@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import AddressAutocomplete from '@/components/addressAutocomplete';
+import NewAddressAutocomplete from '@/components/newAddressAutocomplete';
 import supabase from '@/lib/supabaseClient';
 
 
@@ -188,7 +188,7 @@ export default function PreContractAssessmentForm() {
 
         <div className="card">
           <h2 className="card-title">Site Address</h2>
-          <AddressAutocomplete onSelect={handleAddressSelect} />
+          <NewAddressAutocomplete onSelect={handleAddressSelect} />
           <div className="form-grid">
             {['street', 'suburb', 'state', 'postcode'].map((key) => (
               <div key={key}>

@@ -16,9 +16,11 @@ export default class MyDocument extends Document {
 
           {/* Extended Google Web Component Loader */}
           <script
-            type="module"
-            src="https://unpkg.com/@googlemaps/extended-component-library/loader.js"
-          />
+              async
+              defer
+              src="https://www.gstatic.com/maps/extended-component-library/loader.js"
+            ></script>
+
         </Head>
         <body>
           <Main />

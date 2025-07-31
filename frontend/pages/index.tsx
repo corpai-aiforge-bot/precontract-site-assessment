@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Welcome | PreContract Site Assessment</title>
+        <title></title>
       </Head>
       <main className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
         <div className="text-center">
