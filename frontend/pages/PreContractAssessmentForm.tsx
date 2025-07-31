@@ -303,8 +303,14 @@ export default function PreContractAssessmentForm() {
           <h2 className="card-title">BAL Rating</h2>
           <select
             value={formData.balRating}
-            onChange={(e) => setFormData({ ...prev, balRating: e.target.value })}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                balRating: e.target.value,
+              }))
+            }
           >
+
             <option value="">Select BAL Rating</option>
             {['BAL-LOW', 'BAL-12.5', 'BAL-19', 'BAL-29', 'BAL-40', 'BAL-FZ'].map((r) => (
               <option key={r} value={r}>{r}</option>
