@@ -11,7 +11,7 @@ app = FastAPI()
 # Allow all origins for development (lock down in production)
 app.add_middleware(
     CORSMiddleware,
-    allowed_origin = os.getenv("FRONTEND_ORIGIN", "*"),  # fallback to wildcard for dev
+    allow_origins=[os.getenv("FRONTEND_ORIGIN", "*")],  # ✅ fixed
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
