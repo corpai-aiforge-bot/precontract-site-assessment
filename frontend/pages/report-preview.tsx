@@ -1,85 +1,98 @@
 // frontend/pages/report-preview.tsx
-import { useEffect, useState } from 'react';
 
-interface ProjectData {
-  projectName: string;
-  firstName: string;
-  lastName: string;
-  street: string;
-  suburb: string;
-  state: string;
-  postcode: string;
-  council: string;
-  elevation: string;
-  distanceToCoast: string;
-  windZone: string;
-  balRating: string;
-  benchmark1: string;
-  benchmark2: string;
-  footingRecommendation: string;
-  riskSummary: string;
-  services: string[];
-}
+import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export default function ReportPreview() {
-  const [project, setProject] = useState<ProjectData | null>(null);
+  const [data, setData] = useState<any | null>(null);
 
   useEffect(() => {
-    fetch('/api/latest-project')
-      .then(res => res.json())
-      .then(data => setProject(data))
-      .catch(() => setProject(null));
+    const raw = sessionStorage.getItem("latestProject");
+    if (raw) setData(JSON.parse(raw));
   }, []);
 
-  const downloadReport = async () => {
-    const res = await fetch('/api/report-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(project),
+  const downloadPDF = async () => {
+    const res = await fetch("/api/pdf-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
     });
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'precontract-report.docx';
-    a.click();
-    window.URL.revokeObjectURL(url);
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Site_Report_${data.projectName || "project"}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
-  if (!project) return <div className="p-8">Loading...</div>;
+  const emailPDF = async () => {
+    const res = await fetch("/api/email-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) alert("Report sent to client.");
+    else alert("Failed to send email.");
+  };
+
+  if (!data) return <div className="p-10 text-gray-600">Loading preview...</div>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6 mt-10 border border-gray-300 shadow-md bg-white rounded-xl">
-      <h1 className="text-2xl font-bold mb-4">Report Preview</h1>
+    <div className="max-w-3xl mx-auto bg-white border border-gray-300 rounded shadow-md p-8 space-y-6 print:bg-white print:shadow-none">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <Image src="/assets/gbta-logo.jpg" alt="GBTA Logo" width={120} height={80} />
+        <h1 className="text-2xl font-bold text-gray-800 text-right">Pre-Contract Site Assessment Report</h1>
+      </div>
 
-      <section className="space-y-2 text-sm">
-        <div><strong>Project Name:</strong> {project.projectName}</div>
-        <div><strong>Name:</strong> {project.firstName} {project.lastName}</div>
-        <div><strong>Address:</strong> {project.street}, {project.suburb} {project.state} {project.postcode}</div>
-        <div><strong>Council:</strong> {project.council}</div>
-        <div><strong>Elevation:</strong> {project.elevation} m</div>
-        <div><strong>Distance to Coast:</strong> {project.distanceToCoast} km</div>
-        <div><strong>Wind Zone:</strong> {project.windZone}</div>
-        <div><strong>BAL Rating:</strong> {project.balRating}</div>
-        <div><strong>Benchmark Levels:</strong> {project.benchmark1}, {project.benchmark2}</div>
-        <div><strong>Footing Recommendation:</strong> {project.footingRecommendation}</div>
-        <div><strong>Risk Summary:</strong> {project.riskSummary}</div>
-        <div><strong>Services Requested:</strong> {project.services.join(', ')}</div>
+      {/* Client Details */}
+      <section className="text-sm text-gray-800">
+        <h2 className="font-semibold text-lg border-b pb-1 mb-2">Client Information</h2>
+        <p><strong>Client Name:</strong> {data.firstName} {data.lastName}</p>
+        <p><strong>Project Name:</strong> {data.projectName}</p>
+        <p><strong>Services Requested:</strong> {data.services?.join(", ")}</p>
       </section>
 
-      <div className="mt-6 space-x-4">
+      {/* Site Address */}
+      <section className="text-sm text-gray-800">
+        <h2 className="font-semibold text-lg border-b pb-1 mb-2">Site Details</h2>
+        <p><strong>Address:</strong> {data.street}, {data.suburb} {data.state} {data.postcode}</p>
+        <p><strong>Council:</strong> {data.council || "—"}</p>
+      </section>
+
+      {/* Geo & Risk Data */}
+      <section className="text-sm text-gray-800 grid grid-cols-2 gap-4">
+        <div><strong>Elevation:</strong> {data.elevation || "—"} m</div>
+        <div><strong>Distance to Coast:</strong> {data.distanceToCoast || "—"} km</div>
+        <div><strong>Wind Zone:</strong> {data.windZone || "—"}</div>
+        <div><strong>BAL Rating:</strong> {data.balRating || "—"}</div>
+        <div><strong>Benchmark 1:</strong> {data.benchmark1 || "—"}</div>
+        <div><strong>Benchmark 2:</strong> {data.benchmark2 || "—"}</div>
+        <div><strong>Footing Recommendation:</strong> {data.footingRecommendation || "—"}</div>
+        <div><strong>Risk Summary:</strong> {data.riskSummary || "—"}</div>
+      </section>
+
+      {/* Action Buttons */}
+      <div className="flex gap-4 justify-end pt-6">
         <button
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-          onClick={() => window.print()}
+          onClick={downloadPDF}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          Print
+          Download PDF
         </button>
         <button
-          className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
-          onClick={downloadReport}
+          onClick={emailPDF}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
         >
-          Download Report (.docx)
+          Email to Client
         </button>
+      </div>
+
+      <div className="pt-4 border-t text-sm text-gray-500 text-center">
+        Report generated by Corporate AI Solutions — www.corporateaisolutions.com
       </div>
     </div>
   );
