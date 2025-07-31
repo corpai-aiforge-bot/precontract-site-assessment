@@ -1,6 +1,5 @@
 // components/newAddressAutocomplete.tsx
-import { useState, useEffect, useRef } from 'react';
-import { useDebounce } from '@/utils/useDebounce';
+import { useEffect, useRef } from 'react';
 import { useScriptStatus } from '@/utils/useScriptStatus';
 
 interface AddressMetadata {
@@ -18,68 +17,61 @@ interface Props {
 }
 
 export default function NewAddressAutocomplete({ onSelect }: Props) {
-  const [input, setInput] = useState('');
-  const [warning, setWarning] = useState('');
-  const debouncedInput = useDebounce(input, 400);
-  const autocompleteRef = useRef<HTMLInputElement>(null);
-
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const mapsStatus = useScriptStatus(
-    `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly&region=AU`
+    `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&v=weekly&loading=async`
   );
 
   useEffect(() => {
-    if (mapsStatus !== 'ready') return;
-    if (!autocompleteRef.current) return;
+    if (mapsStatus !== 'ready' || !window.google || !window.google.maps || !inputRef.current) return;
 
-    const autocomplete = new window.google.maps.places.Autocomplete(autocompleteRef.current!, {
+    const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
       fields: ['formatted_address', 'geometry', 'address_components'],
-      types: ['geocode'],
+      types: ['address'],
+      componentRestrictions: { country: 'au' },
     });
 
-    autocomplete.addListener('place_changed', () => {
+    const listener = autocomplete.addListener('place_changed', () => {
       const place = autocomplete.getPlace();
-      if (!place.geometry || !place.formatted_address) return;
-
-      const lat = place.geometry.location?.lat?.() ?? 0;
-      const lng = place.geometry.location?.lng?.() ?? 0;
-      const components = place.address_components ?? [];
-
-      const getComponent = (type: string) => components.find((c) => c.types.includes(type))?.long_name || '';
+      if (!place.geometry?.location || !place.formatted_address) return;
 
       const meta: AddressMetadata = {
         address: place.formatted_address,
-        lat,
-        lng,
-        suburb: getComponent('locality'),
-        postcode: getComponent('postal_code'),
-        state: getComponent('administrative_area_level_1'),
-        country: getComponent('country'),
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+        suburb: extractComponent(place, 'locality'),
+        postcode: extractComponent(place, 'postal_code'),
+        state: extractComponent(place, 'administrative_area_level_1'),
+        country: extractComponent(place, 'country'),
       };
 
       onSelect(meta);
     });
-  }, [mapsStatus]);
 
-  useEffect(() => {
-    if (mapsStatus === 'error') {
-      setWarning('⚠️ Map-based lookups are unavailable — manual address input only.');
-    }
-  }, [mapsStatus]);
+    return () => {
+      google.maps.event.removeListener(listener);
+    };
+  }, [mapsStatus, onSelect]);
 
   return (
     <div>
-      {mapsStatus === 'error' && <p className="map-warning">{warning}</p>}
+      {mapsStatus === 'error' && (
+        <p className="map-warning">
+          ⚠️ Map-based lookups are unavailable — manual address input only.
+        </p>
+      )}
       <input
-        ref={autocompleteRef}
+        ref={inputRef}
         type="text"
         placeholder="Enter site address"
         disabled={mapsStatus !== 'ready'}
-        className="form-input"
+        className="form-input pac-container"
       />
     </div>
-
-
-
-
   );
+}
+
+function extractComponent(place: google.maps.places.PlaceResult, type: string): string | undefined {
+  const component = place.address_components?.find((c) => c.types.includes(type));
+  return component?.long_name;
 }

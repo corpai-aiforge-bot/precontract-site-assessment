@@ -14,7 +14,7 @@ export default function Home() {
             Start your assessment by selecting a service from the menu or navigating to the form.
           </p>
 
-          <Link href="/ui1">
+          <Link href="/PreContractAssessmentForm">
             <button className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition">
               Begin Site Assessment
             </button>

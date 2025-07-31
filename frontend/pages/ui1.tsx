@@ -53,8 +53,15 @@ export default function PreContractAssessmentForm() {
     services: [],
   });
 
+    // Example usage in ui1.tsx
   const handleAddressSelect = async (meta: AddressMetadata) => {
     const { address, lat, lng, postcode = '', suburb = '', state = '' } = meta;
+    const windZone = await fetchWindZone(meta.lat, meta.lng);
+    const benchmark = await fetchBenchmark(meta.lat, meta.lng);
+    console.log('Wind Zone:', windZone);
+    console.log('Nearest Benchmark:', benchmark);
+    // Update state or UI with windZone and benchmark
+  };
 
     const [council, elevation, distanceToCoast, windZone, benchmarks] = await Promise.all([
       fetchCouncilName(postcode),
@@ -250,33 +257,60 @@ async function fetchElevation(lat: number, lng: number) {
   const json = await res.json();
   return json?.elevation ?? null;
 }
-
-async function fetchDistanceToCoast(lat: number, lng: number) {
-  const res = await fetch('/api/proximity', {
-    method: 'POST',
-    body: JSON.stringify({ lat, lng }),
-    headers: { 'Content-Type': 'application/json' },
-  });
-  const json = await res.json();
-  return json?.distanceToCoast ?? null;
-}
+const fetchDistanceToCoast = async (lat: number, lng: number): Promise<number | null> => {
+  try {
+    const res = await fetch(`/api/proximity?lat=${lat}&lng=${lng}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      console.error(`Proximity API failed: ${res.status}`);
+      return null;
+    }
+    const json = await res.json();
+    if (json.error) {
+      console.error(`Proximity API error: ${json.error}`);
+      return null;
+    }
+    return json.distance; // Meters
+  } catch (err) {
+    console.error('Error fetching distance to coast:', err);
+    return null;
+  }
+};
 
 async function fetchWindZone(lat: number, lng: number) {
-  const res = await fetch('/api/windzones', {
-    method: 'POST',
-    body: JSON.stringify({ lat, lng }),
-    headers: { 'Content-Type': 'application/json' },
-  });
-  const json = await res.json();
-  return json?.windZone ?? null;
+  try {
+    const res = await fetch(`/api/windzones?lat=${lat}&lng=${lng}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      console.error(`Windzones API failed: ${res.status}`);
+      return null;
+    }
+    const json = await res.json();
+    return json?.windZone ?? null;
+  } catch (err) {
+    console.error('Unexpected error fetching wind zone:', err);
+    return null;
+  }
 }
 
-async function fetchBenchmarks(lat: number, lng: number): Promise<{ benchmark1: number | null; benchmark2: number | null }> {
-  const res = await fetch('/api/benchmarks', {
-    method: 'POST',
-    body: JSON.stringify({ lat, lng }),
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!res.ok) return { benchmark1: null, benchmark2: null };
-  return await res.json();
+async function fetchBenchmark(lat: number, lng: number) {
+  try {
+    const res = await fetch(`/api/benchmarks?lat=${lat}&lng=${lng}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      console.error(`Benchmarks API failed: ${res.status}`);
+      return null;
+    }
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    console.error('Unexpected error fetching benchmark:', err);
+    return null;
+  }
 }
