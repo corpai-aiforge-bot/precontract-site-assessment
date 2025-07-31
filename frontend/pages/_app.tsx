@@ -1,13 +1,10 @@
 // frontend/pages/_app.tsx
 import Head from 'next/head';
-import '../styles/main.scss'
-import type { AppProps } from 'next/app'
+import '@/styles/main.scss';     // General styles
+import '@/styles/ui1.scss';      // Page-specific
+import '@/styles/form.scss';     // Layout styling for forms
+import type { AppProps } from 'next/app';
 import Layout from '../components/Layout';
-import '@/styles/ui1.scss'
-
-
-
-
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (

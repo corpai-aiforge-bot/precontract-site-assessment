@@ -1,30 +1,41 @@
-import math
-import csv
-from pathlib import Path
+# backend/routes/benchmark.py
+from fastapi import APIRouter, Request
+from utils.supabase_client import supabase
+from utils.haversine import haversine
 
-BENCHMARK_CSV = Path(__file__).parent.parent / "data" / "benchmarks.csv"
+router = APIRouter()
 
-def haversine(lat1, lon1, lat2, lon2):
-    R = 6371
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * \
-        math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+@router.post("/benchmarks")
+async def get_benchmarks(request: Request):
+    try:
+        data = await request.json()
+        lat = float(data.get("lat"))
+        lng = float(data.get("lng"))
 
-def find_nearest_benchmarks(lat, lng, limit=2):
-    with open(BENCHMARK_CSV, newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        benchmarks = []
-        for row in reader:
-            b_lat = float(row["lat"])
-            b_lng = float(row["lng"])
-            dist = haversine(lat, lng, b_lat, b_lng)
-            benchmarks.append({
-                "id": row["id"],
-                "lat": b_lat,
-                "lng": b_lng,
-                "elevation": float(row["elevation"]),
-                "distance_km": dist
-            })
-        return sorted(benchmarks, key=lambda x: x["distance_km"])[:limit]
+        # Get all benchmark rows
+        response = supabase.table("survey_benchmarks_sa").select("*").execute()
+
+        if response.error:
+            return {"error": str(response.error)}, 500
+
+        all_benchmarks = response.data
+        if not all_benchmarks:
+            return {"error": "No benchmarks found"}, 404
+
+        # Calculate distances
+        enriched = []
+        for b in all_benchmarks:
+            b_lat = float(b["lat"])
+            b_lng = float(b["lng"])
+            distance = haversine(lat, lng, b_lat, b_lng)
+            enriched.append({**b, "distance_km": distance})
+
+        # Sort and return 2 closest
+        closest = sorted(enriched, key=lambda b: b["distance_km"])[:2]
+        return {
+            "benchmark1": closest[0]["elevation"] if len(closest) > 0 else None,
+            "benchmark2": closest[1]["elevation"] if len(closest) > 1 else None,
+        }
+
+    except Exception as e:
+        return {"error": str(e)}, 500

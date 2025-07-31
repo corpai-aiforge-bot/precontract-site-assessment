@@ -22,26 +22,82 @@ interface AddressMetadata {
   riskSummary?: string;
 }
 
+interface FormData extends AddressMetadata {
+  projectName: string;
+  firstName: string;
+  lastName: string;
+  services: string[]; // user-selected checkboxes
+}
+
 export default function PreContractAssessmentForm() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     projectName: '',
     firstName: '',
     lastName: '',
-    street: '',
+    address: '',
+    lat: 0,
+    lng: 0,
     suburb: '',
     postcode: '',
     state: '',
+    country: '',
     council: '',
-    elevation: '',
-    distanceToCoast: '',
+    elevation: null,
+    distanceToCoast: null,
     windZone: '',
     balRating: '',
-    benchmark1: '',
-    benchmark2: '',
+    benchmark1: null,
+    benchmark2: null,
     footingRecommendation: '',
     riskSummary: '',
-    services: [] as string[],
+    services: [],
   });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  return (
+    <form>
+      <input name="projectName" value={formData.projectName} onChange={handleChange} placeholder="Project Name" />
+      <input name="firstName" value={formData.firstName} onChange={handleChange} placeholder="First Name" />
+      <input name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Last Name" />
+
+      {/* Autopopulated Read-only Fields */}
+      <input value={formData.address} placeholder="Address" readOnly />
+      <input value={formData.suburb} placeholder="Suburb" readOnly />
+      <input value={formData.postcode} placeholder="Postcode" readOnly />
+      <input value={formData.state} placeholder="State" readOnly />
+      <input value={formData.council} placeholder="Council" readOnly />
+      <input value={formData.elevation ?? ''} placeholder="Elevation (m)" readOnly />
+      <input value={formData.distanceToCoast ?? ''} placeholder="Distance to Coast (km)" readOnly />
+      <input value={formData.windZone} placeholder="Wind Zone" readOnly />
+      <input value={formData.balRating} placeholder="BAL Rating" readOnly />
+      <input value={formData.benchmark1 ?? ''} placeholder="Benchmark 1 (m AHD)" readOnly />
+      <input value={formData.benchmark2 ?? ''} placeholder="Benchmark 2 (m AHD)" readOnly />
+      <input value={formData.footingRecommendation} placeholder="Footing Recommendation" readOnly />
+      <input value={formData.riskSummary} placeholder="Risk Summary" readOnly />
+
+      {/* Example for checkbox handling */}
+      <label>
+        <input
+          type="checkbox"
+          checked={formData.services.includes('power')}
+          onChange={() =>
+            setFormData((prev) => ({
+              ...prev,
+              services: prev.services.includes('power')
+                ? prev.services.filter((s) => s !== 'power')
+                : [...prev.services, 'power'],
+            }))
+          }
+        />
+        Power Available
+      </label>
+    </form>
+  );
+}
 
   async function fetchCouncilName(postcode: string): Promise<string | null> {
   try {
@@ -90,7 +146,7 @@ export default function PreContractAssessmentForm() {
   }
 
   async function fetchWindZone(lat: number, lng: number) {
-    const res = await fetch('/api/windzone', {
+    const res = await fetch('/api/windzones', {
       method: 'POST',
       body: JSON.stringify({ lat, lng }),
       headers: { 'Content-Type': 'application/json' },
@@ -99,45 +155,57 @@ export default function PreContractAssessmentForm() {
     return json?.windZone ?? null;
   }
 
-  async function fetchBenchmarks(suburb: string, postcode: string) {
+  async function fetchBenchmarks(lat: number, lng: number): Promise<{ benchmark1: number | null; benchmark2: number | null }> {
     const res = await fetch('/api/benchmarks', {
       method: 'POST',
-      body: JSON.stringify({ suburb, postcode }),
+      body: JSON.stringify({ lat, lng }),
       headers: { 'Content-Type': 'application/json' },
     });
-    const json = await res.json();
-    return { benchmark1: json?.benchmark1, benchmark2: json?.benchmark2 };
+    if (!res.ok) return { benchmark1: null, benchmark2: null };
+    return await res.json();
   }
 
+
   const handleAddressSelect = async (meta: AddressMetadata) => {
-    const { address, lat, lng, postcode = '', suburb = '', state = '' } = meta;
+    const { address, lat, lng, postcode = "", suburb = "", state = "" } = meta;
+
+    // Parallel fetches using lat/lng and postcode
     const [council, elevation, distanceToCoast, windZone, benchmarks] = await Promise.all([
       fetchCouncilName(postcode),
       fetchElevation(lat, lng),
       fetchDistanceToCoast(lat, lng),
       fetchWindZone(lat, lng),
-      fetchBenchmarks(suburb, postcode),
+      fetchBenchmarks(lat, lng),
     ]);
 
     setFormData((prev) => ({
       ...prev,
       street: address,
+      lat,            // ✅ Add this
+      lng,            // ✅ Add this
       suburb,
       state,
       postcode,
-      council: council || '',
-      elevation: elevation?.toString() || '',
-      distanceToCoast: distanceToCoast?.toString() || '',
-      windZone: windZone || '',
-      benchmark1: benchmarks.benchmark1?.toString() || '',
-      benchmark2: benchmarks.benchmark2?.toString() || '',
+      council: council || "",
+      elevation: elevation?.toString() || "",
+      distanceToCoast: distanceToCoast?.toString() || "",
+      windZone: windZone || "",
+      benchmark1: benchmarks?.benchmark1?.toString() || "",
+      benchmark2: benchmarks?.benchmark2?.toString() || "",
+      balRating: "",
+      footingRecommendation: "",
+      riskSummary: "",
     }));
 
-    sessionStorage.setItem(
-      'latestProject',
-      JSON.stringify({ ...formData, street: address, suburb, state, postcode })
-    );
+    sessionStorage.setItem("latestProject", JSON.stringify({
+      ...formData,
+      street: address,
+      suburb,
+      state,
+      postcode,
+    }));
   };
+
 
   const handleServiceToggle = (service: string) => {
     setFormData((prev) => ({
@@ -216,10 +284,30 @@ export default function PreContractAssessmentForm() {
           <h2 className="card-title">Site Metadata</h2>
           <div className="meta-grid">
             <p><strong>Council:</strong> {formData.council || '—'}</p>
-            <p><strong>Elevation:</strong> {formData.elevation || '—'} m</p>
-            <p><strong>Distance to Coast:</strong> {formData.distanceToCoast || '—'} km</p>
+            <p><strong>Latitude:</strong> {formData.lat || '—'}° <span className="meta-note">"latitude"</span></p>
+            <p><strong>Longitude:</strong> {formData.lng || '—'}° <span className="meta-note">"longitude"</span></p>
+            {/* Site Risk Calculator */}
+            <FootingRiskDisplay
+              elevation={parseFloat(formData.elevation || '0')}
+              distanceToCoast={parseFloat(formData.distanceToCoast || '0')}
+              onRiskUpdate={({ score, category }) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  riskSummary: `${category} site risk (score: ${score}/100)`,
+                  footingRecommendation:
+                    category === 'High'
+                      ? 'Stumps or deep piers recommended'
+                      : category === 'Medium'
+                      ? 'Assess soil conditions for slab vs stump suitability'
+                      : 'Slab-on-ground likely suitable',
+                }))
+              }
+            />
+            <p><strong>Elevation:</strong> {formData.elevation || '—'} m <span className="meta-note">relative to Australian Height Datum (AHD)</span></p>
+            <p><strong>Distance to Coast:</strong> {formData.distanceToCoast || '—'} km <span className="meta-note">measured in straight-line distance</span></p>
             <p><strong>Wind Zone:</strong> {formData.windZone || '—'}</p>
-            <p><strong>Benchmarks:</strong> {formData.benchmark1 || '—'}, {formData.benchmark2 || '—'}</p>
+            <p><strong>Benchmark 1:</strong> {formData.benchmark1 || '—'} m AHD <span className="meta-note">nearest survey benchmark</span></p>
+            <p><strong>Benchmark 2:</strong> {formData.benchmark2 || '—'} m AHD <span className="meta-note">secondary survey benchmark</span></p>
             <p><strong>Footing Recommendation:</strong> {formData.footingRecommendation || '—'}</p>
             <p><strong>Risk Summary:</strong> {formData.riskSummary || '—'}</p>
           </div>
