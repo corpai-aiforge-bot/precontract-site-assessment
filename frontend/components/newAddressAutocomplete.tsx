@@ -1,5 +1,4 @@
-// frontend/components/newAddressAutocomplete.tsx
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
 interface AddressMetadata {
   address: string;
@@ -11,62 +10,41 @@ interface AddressMetadata {
   country?: string;
 }
 
-interface Props {
-  onSelect: (meta: AddressMetadata) => void;
-}
-
-export default function NewAddressAutocomplete({ onSelect }: Props) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+export default function NewAddressAutocomplete({ onSelect }: { onSelect: (meta: AddressMetadata) => void }) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    const load = async () => {
-      if (customElements.get("gmpx-place-autocomplete")) return;
+    if (!window.google || !window.google.maps || !inputRef.current) return;
 
-      const loader = await import("@googlemaps/extended-component-library/loader");
-      customElements.define("gmpx-place-autocomplete", loader.PlaceAutocompleteElement);
-    };
+    const autocomplete = new google.maps.places.Autocomplete(inputRef.current!, {
+      types: ['address'],
+      componentRestrictions: { country: 'au' },
+    });
 
-    load().catch(console.error);
-  }, []);
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (!place.geometry || !place.geometry.location) return;
 
-  useEffect(() => {
-    const root = containerRef.current;
-    if (!root) return;
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
 
-    const handler = (e: any) => {
-      const place = e.target?.value;
-      if (!place || !place.geometry) return;
-
-      const lat = place.geometry.location.lat;
-      const lng = place.geometry.location.lng;
-      const address = place.formattedAddress || "";
-
-      const components = place.addressComponents || [];
-      const get = (type: string) =>
-        components.find((c: any) => c.types.includes(type))?.longText || "";
-
-      onSelect({
-        address,
+      const metadata: AddressMetadata = {
+        address: place.formatted_address || '',
         lat,
         lng,
-        postcode: get("postal_code"),
-        suburb: get("locality") || get("sublocality"),
-        state: get("administrative_area_level_1"),
-        country: get("country"),
-      });
-    };
+        postcode: getAddressPart(place, 'postal_code'),
+        suburb: getAddressPart(place, 'locality'),
+        state: getAddressPart(place, 'administrative_area_level_1'),
+        country: getAddressPart(place, 'country'),
+      };
 
-    root.addEventListener("gmpx-placeautocomplete:placechange", handler);
-    return () => root.removeEventListener("gmpx-placeautocomplete:placechange", handler);
-  }, [onSelect]);
+      onSelect(metadata);
+    });
+  }, []);
 
-  return (
-    <div ref={containerRef}>
-      <gmpx-place-autocomplete
-        style={{ display: "block", width: "100%" }}
-        placeholder="Enter site address"
-        autocomplete-options='{"types": ["geocode"]}'
-      />
-    </div>
-  );
+  return <input ref={inputRef} placeholder="Enter site address" className="address-input" />;
+}
+
+function getAddressPart(place: google.maps.places.PlaceResult, type: string): string | undefined {
+  return place.address_components?.find((c) => c.types.includes(type))?.long_name;
 }
