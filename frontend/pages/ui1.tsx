@@ -1,7 +1,6 @@
 import { useState } from "react";
 import AddressAutocomplete from "@/components/addressAutocomplete";
-import { supabase } from "@/utils/supabaseClient";
-
+import { supabase } from "@/lib/supabaseClient";
 
 interface AddressMetadata {
   address: string;
@@ -129,6 +128,14 @@ export default function PreContractAssessmentForm() {
       footingRecommendation: "",
       riskSummary: "",
     }));
+
+    sessionStorage.setItem("latestProject", JSON.stringify({
+      ...formData,
+      street: address,
+      suburb,
+      state,
+      postcode,
+    }));
   };
 
   const handleServiceToggle = (service: string) => {
@@ -151,12 +158,7 @@ export default function PreContractAssessmentForm() {
 
   return (
     <div className="max-w-4xl mx-auto p-8 bg-white shadow-lg border border-gray-200 rounded-2xl space-y-8">
-      <h1 className="text-3xl font-bold text-gray-800">Information Needed</h1>
-
-      <div className="bg-yellow-100 text-red-600 text-lg font-bold p-4 border">
-           ✅ If you see this styled block, Tailwind is working!
-      </div>
-
+      <h1 className="text-3xl font-bold text-gray-800">🏗️ PreContract Site Assessment</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[
@@ -204,38 +206,20 @@ export default function PreContractAssessmentForm() {
         >
           <option value="">Select BAL Rating</option>
           {["BAL-LOW", "BAL-12.5", "BAL-19", "BAL-29", "BAL-40", "BAL-FZ"].map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
+            <option key={r} value={r}>{r}</option>
           ))}
         </select>
       </div>
 
       <div className="bg-gray-50 p-4 rounded border border-gray-200 text-sm text-gray-800 space-y-1">
-        <p>
-          <strong>Council:</strong> {formData.council || "—"}
-        </p>
-        <p>
-          <strong>Elevation:</strong> {formData.elevation || "—"} m
-        </p>
-        <p>
-          <strong>Distance to Coast:</strong> {formData.distanceToCoast || "—"} km
-        </p>
-        <p>
-          <strong>Wind Zone:</strong> {formData.windZone || "—"}
-        </p>
-        <p>
-          <strong>BAL Rating:</strong> {formData.balRating || "—"}
-        </p>
-        <p>
-          <strong>Benchmarks:</strong> {formData.benchmark1 || "—"}, {formData.benchmark2 || "—"}
-        </p>
-        <p>
-          <strong>Footing Recommendation:</strong> {formData.footingRecommendation || "—"}
-        </p>
-        <p>
-          <strong>Risk Summary:</strong> {formData.riskSummary || "—"}
-        </p>
+        <p><strong>Council:</strong> {formData.council || "—"}</p>
+        <p><strong>Elevation:</strong> {formData.elevation || "—"} m</p>
+        <p><strong>Distance to Coast:</strong> {formData.distanceToCoast || "—"} km</p>
+        <p><strong>Wind Zone:</strong> {formData.windZone || "—"}</p>
+        <p><strong>BAL Rating:</strong> {formData.balRating || "—"}</p>
+        <p><strong>Benchmarks:</strong> {formData.benchmark1 || "—"}, {formData.benchmark2 || "—"}</p>
+        <p><strong>Footing Recommendation:</strong> {formData.footingRecommendation || "—"}</p>
+        <p><strong>Risk Summary:</strong> {formData.riskSummary || "—"}</p>
       </div>
 
       <div>
