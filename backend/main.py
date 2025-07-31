@@ -1,5 +1,6 @@
 # backend/main.py
 from fastapi import FastAPI
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from routes import benchmark, elevation, report, report_pdf, proximity,windzones  # 👈 Add proximity
 
