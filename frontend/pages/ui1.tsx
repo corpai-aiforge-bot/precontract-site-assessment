@@ -43,14 +43,31 @@ export default function PreContractAssessmentForm() {
     services: [] as string[],
   });
 
-  async function fetchCouncilName(postcode: string) {
-    const { data, error } = await supabase
-      .from('councils_by_postcode')
-      .select('lga_region')
-      .eq('postcode', postcode)
-      .single();
-    return error ? null : data?.lga_region;
+  async function fetchCouncilName(postcode: string): Promise<string | null> {
+  try {
+    const { data, error, status } = await supabase
+      .from("councils_by_postcode")
+      .select("lga_region")
+      .eq("postcode", postcode)
+      .maybeSingle(); // prevents throwing if no rows
+
+    if (error) {
+      console.error(`Supabase error [${status}]:`, error.message);
+      return null;
+    }
+
+    if (!data) {
+      console.warn(`No council data found for postcode ${postcode}`);
+      return null;
+    }
+
+    return data.lga_region || null;
+  } catch (err) {
+    console.error("Unexpected error fetching council name:", err);
+    return null;
   }
+}
+
 
   async function fetchElevation(lat: number, lng: number) {
     const res = await fetch('/api/elevation', {

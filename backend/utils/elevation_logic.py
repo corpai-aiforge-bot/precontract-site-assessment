@@ -3,15 +3,15 @@
 import os
 import requests
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
 def get_elevation_from_google(lat, lng):
-    if not GOOGLE_API_KEY:
+    if not GOOGLE_MAPS_API_KEY:
         raise ValueError("Missing GOOGLE_MAPS_API_KEY in environment.")
 
     url = (
         f"https://maps.googleapis.com/maps/api/elevation/json"
-        f"?locations={lat},{lng}&key={GOOGLE_API_KEY}"
+        f"?locations={lat},{lng}&key={GOOGLE_MAPS_API_KEY}"
     )
 
     try:

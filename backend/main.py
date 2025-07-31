@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 import os
 from fastapi.middleware.cors import CORSMiddleware
-from routes import benchmark, elevation, report, report_pdf, proximity,windzones  # 👈 Add proximity
+from routes import benchmark, elevation, report,sanity, report_pdf, proximity,windzones  # 👈 Add proximity
 
 
 
@@ -24,3 +24,4 @@ app.include_router(proximity.router, prefix="/api")  # 👈 Add this
 app.include_router(report.router, prefix="/api")
 app.include_router(report_pdf.router, prefix="/api")
 app.include_router(windzones.router)
+app.include_router(sanity.router, prefix="/api")
