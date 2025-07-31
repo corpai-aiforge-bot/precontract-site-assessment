@@ -153,10 +153,6 @@ export default function PreContractAssessmentForm() {
     }
   }
 
-
-
-
-
   async function fetchBenchmarks(lat: number, lng: number): Promise<{ benchmark1: number | null; benchmark2: number | null }> {
     try {
       const { data, error } = await supabase.rpc('nearest_benchmarks', { lat, lng });
@@ -189,7 +185,7 @@ export default function PreContractAssessmentForm() {
         fetchElevation(lat, lng),
         fetchDistanceToCoast(lat, lng),
         fetchWindZone(lat, lng),
-        fetchBenchmarks(lat, lng, state),
+        fetchBenchmarks(lat, lng),
       ]);
 
       setFormData((prev) => ({
