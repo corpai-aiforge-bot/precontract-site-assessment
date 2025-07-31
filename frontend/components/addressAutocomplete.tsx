@@ -1,43 +1,28 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 
-// TypeScript prop interface for createElement
-interface GmpxPlaceAutocompleteProps {
-  id?: string;
-  placeholder?: string;
-  style?: React.CSSProperties;
-  onPlaceChange?: (event: CustomEvent) => void;
-}
-
+// Fallback autocomplete if <gmpx-place-autocomplete> is unsupported
 const FallbackAutocomplete = dynamic(() => import("./FallbackAutocomplete"), { ssr: false });
 
-export default function AddressAutocomplete({
-  onSelect,
-}: {
+// TypeScript-safe props for fallback
+interface Props {
   onSelect: (meta: { address: string; lat: number; lng: number }) => void;
-}) {
+}
+
+export default function AddressAutocomplete({ onSelect }: Props) {
   const [useFallback, setUseFallback] = useState(false);
 
   useEffect(() => {
-    const loadGoogleMaps = async () => {
-      try {
-        const { load } = await import('@googlemaps/extended-component-library');
-        await load({ apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '' });
-        const supportsGmpx = !!customElements.get("gmpx-place-autocomplete");
-        setUseFallback(!supportsGmpx);
-      } catch (error) {
-        console.error("Failed to load Google Maps:", error);
-        setUseFallback(true);
-      }
-    };
-    loadGoogleMaps();
+    const supportsGmpx =
+      typeof window !== "undefined" && !!customElements.get("gmpx-place-autocomplete");
+    setUseFallback(!supportsGmpx);
   }, []);
 
   if (useFallback) {
     return <FallbackAutocomplete onSelect={onSelect} />;
   }
 
-  return React.createElement<GmpxPlaceAutocompleteProps>("gmpx-place-autocomplete", {
+  return React.createElement("gmpx-place-autocomplete", {
     id: "smart-gmpx",
     placeholder: "Enter site address",
     style: { width: "100%" },
