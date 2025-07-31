@@ -73,11 +73,13 @@ export default function NewAddressAutocomplete({ onSelect }: Props) {
         ref={autocompleteRef}
         type="text"
         placeholder="Enter site address"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
         disabled={mapsStatus !== 'ready'}
         className="form-input"
       />
     </div>
+
+
+
+
   );
 }
