@@ -2,6 +2,7 @@ import { useState } from "react";
 import AddressAutocomplete from "@/components/addressAutocomplete";
 import { supabase } from "@/utils/supabaseClient";
 
+
 interface AddressMetadata {
   address: string;
   lat: number;
@@ -150,7 +151,12 @@ export default function PreContractAssessmentForm() {
 
   return (
     <div className="max-w-4xl mx-auto p-8 bg-white shadow-lg border border-gray-200 rounded-2xl space-y-8">
-      <h1 className="text-3xl font-bold text-gray-800">🏗️ Information Needed</h1>
+      <h1 className="text-3xl font-bold text-gray-800">Information Needed</h1>
+
+      <div className="bg-yellow-100 text-red-600 text-lg font-bold p-4 border">
+           ✅ If you see this styled block, Tailwind is working!
+      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[
