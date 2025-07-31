@@ -274,7 +274,12 @@ export default function PreContractAssessmentForm() {
                 <input
                   type="text"
                   value={formData[key as keyof FormData] as string}
-                  onChange={(e) => setFormData({ ...prev, [key]: e.target.value })}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      [key]: e.target.value,
+                    }))
+                  }
                 />
               </div>
             ))}
