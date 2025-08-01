@@ -2,6 +2,7 @@ import { useState } from 'react';
 import NewAddressAutocomplete from '@/components/newAddressAutocomplete';
 import supabase from '@/lib/supabaseClient';
 import FootingRiskDisplay from '@/components/FootingRiskDisplay';
+import { fetchNearestWindZone } from '@/utils/fetchWindZone';
 
 interface AddressMetadata {
   address: string;
@@ -36,14 +37,6 @@ interface FormData {
   services: string[];
 }
 
-interface Benchmark {
-  mark_no: string;
-  latitude: number;
-  longitude: number;
-  height: number;
-  marktype: string;
-}
-
 export default function PreContractAssessmentForm() {
   const [formData, setFormData] = useState<FormData>({
     projectName: '',
@@ -71,108 +64,6 @@ export default function PreContractAssessmentForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function fetchCouncilName(postcode: string): Promise<string | null> {
-    try {
-      const { data, error, status } = await supabase
-        .from('councils_by_postcode')
-        .select('lga_region')
-        .eq('postcode', postcode)
-        .maybeSingle();
-
-      if (error) {
-        console.error(`Supabase error [${status}]:`, error.message);
-        return null;
-      }
-      return data?.lga_region || null;
-    } catch (err) {
-      console.error('Unexpected error fetching council name:', err);
-      return null;
-    }
-  }
-
-  async function fetchElevation(lat: number, lng: number): Promise<number | null> {
-    try {
-      const res = await fetch('/api/elevation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat, lng }),
-      });
-      if (!res.ok) {
-        console.error(`Elevation API failed: ${res.status}`);
-        return null;
-      }
-      const json = await res.json();
-      if (json.error) {
-        console.error(`Elevation API error: ${json.error}`);
-        return null;
-      }
-      return json.elevation ?? null;
-    } catch (err) {
-      console.error('Error fetching elevation:', err);
-      return null;
-    }
-  }
-
-  async function fetchDistanceToCoast(lat: number, lng: number): Promise<number | null> {
-    try {
-      const res = await fetch(`/api/proximity?lat=${lat}&lng=${lng}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!res.ok) {
-        console.error(`Proximity API failed: ${res.status}`);
-        return null;
-      }
-      const json = await res.json();
-      if (json.error) {
-        console.error(`Proximity API error: ${json.error}`);
-        return null;
-      }
-      return json.distance; // Meters
-    } catch (err) {
-      console.error('Error fetching distance to coast:', err);
-      return null;
-    }
-  }
-
-  async function fetchWindZone(lat: number, lng: number): Promise<string | null> {
-    try {
-      const res = await fetch(`/api/windzones?lat=${lat}&lng=${lng}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!res.ok) {
-        console.error(`Windzones API failed: ${res.status}`);
-        return null;
-      }
-      const json = await res.json();
-      return json.windZone ?? null;
-    } catch (err) {
-      console.error('Error fetching wind zone:', err);
-      return null;
-    }
-  }
-
-  async function fetchBenchmarks(lat: number, lng: number): Promise<{ benchmark1: number | null; benchmark2: number | null }> {
-    try {
-      const { data, error } = await supabase.rpc('nearest_benchmarks', { lat, lng });
-
-      if (error) {
-        console.error('Benchmark RPC error:', error.message);
-        return { benchmark1: null, benchmark2: null };
-      }
-
-      const [bm1, bm2] = data || [];
-      return {
-        benchmark1: bm1?.elevation ?? null,
-        benchmark2: bm2?.elevation ?? null,
-      };
-    } catch (err) {
-      console.error('Unexpected error during benchmark fetch:', err);
-      return { benchmark1: null, benchmark2: null };
-    }
-  }
-
   const handleAddressSelect = async (meta: AddressMetadata) => {
     setLoading(true);
     setError(null);
@@ -180,11 +71,11 @@ export default function PreContractAssessmentForm() {
     const { address, lat, lng, postcode = '', suburb = '', state = '', country = '' } = meta;
 
     try {
-      const [council, elevation, distanceToCoast, windZone, benchmarks] = await Promise.all([
+      const [councilRes, elevRes, distRes, windRes, benchmarks] = await Promise.all([
         fetchCouncilName(postcode),
         fetchElevation(lat, lng),
         fetchDistanceToCoast(lat, lng),
-        fetchWindZone(lat, lng),
+        fetchNearestWindZone(lat, lng),
         fetchBenchmarks(lat, lng),
       ]);
 
@@ -197,10 +88,10 @@ export default function PreContractAssessmentForm() {
         state,
         postcode,
         country,
-        council: council || '',
-        elevation: elevation?.toString() || '',
-        distanceToCoast: distanceToCoast?.toString() || '',
-        windZone: windZone || '',
+        council: councilRes || '',
+        elevation: elevRes?.toString() || '',
+        distanceToCoast: distRes?.toString() || '',
+        windZone: windRes?.region || windRes?.area || '',
         benchmark1: benchmarks?.benchmark1?.toString() || '',
         benchmark2: benchmarks?.benchmark2?.toString() || '',
       }));
@@ -217,6 +108,63 @@ export default function PreContractAssessmentForm() {
       setError('Failed to fetch site data. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCouncilName = async (postcode: string): Promise<string | null> => {
+    const { data, error } = await supabase
+      .from('councils_by_postcode')
+      .select('lga_region')
+      .eq('postcode', postcode)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Supabase council lookup error:', error.message);
+      return null;
+    }
+    return data?.lga_region ?? null;
+  };
+
+  const fetchElevation = async (lat: number, lng: number): Promise<number | null> => {
+    try {
+      const res = await fetch('/api/elevation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng }),
+      });
+      const json = await res.json();
+      return res.ok ? json.elevation ?? null : null;
+    } catch (err) {
+      console.error('Elevation fetch failed:', err);
+      return null;
+    }
+  };
+
+  const fetchDistanceToCoast = async (lat: number, lng: number): Promise<number | null> => {
+    try {
+      const res = await fetch(`/api/proximity?lat=${lat}&lng=${lng}`);
+      const json = await res.json();
+      return res.ok ? json.distance ?? null : null;
+    } catch (err) {
+      console.error('Proximity fetch failed:', err);
+      return null;
+    }
+  };
+
+  const fetchBenchmarks = async (
+    lat: number,
+    lng: number
+  ): Promise<{ benchmark1: number | null; benchmark2: number | null }> => {
+    try {
+      const { data, error } = await supabase.rpc('nearest_benchmarks', { lat, lng });
+      const [b1, b2] = data || [];
+      return {
+        benchmark1: b1?.elevation ?? null,
+        benchmark2: b2?.elevation ?? null,
+      };
+    } catch (err) {
+      console.error('Benchmark fetch error:', err);
+      return { benchmark1: null, benchmark2: null };
     }
   };
 
@@ -242,7 +190,7 @@ export default function PreContractAssessmentForm() {
         setError('Failed to save project. Please try again.');
       }
     } catch (err) {
-      console.error('Error submitting form:', err);
+      console.error('Form submit error:', err);
       setError('Failed to save project. Please try again.');
     }
   };
@@ -268,15 +216,12 @@ export default function PreContractAssessmentForm() {
           <div className="form-grid">
             {['projectName', 'firstName', 'lastName'].map((key) => (
               <div key={key}>
-                <label>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</label>
+                <label>{key.replace(/([A-Z])/g, ' $1')}</label>
                 <input
                   type="text"
                   value={formData[key as keyof FormData] as string}
                   onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      [key]: e.target.value,
-                    }))
+                    setFormData((prev) => ({ ...prev, [key]: e.target.value }))
                   }
                 />
               </div>
@@ -290,7 +235,7 @@ export default function PreContractAssessmentForm() {
           <div className="form-grid">
             {['address', 'suburb', 'state', 'postcode'].map((key) => (
               <div key={key}>
-                <label>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</label>
+                <label>{key.replace(/([A-Z])/g, ' $1')}</label>
                 <input value={formData[key as keyof FormData]} readOnly />
               </div>
             ))}
@@ -302,16 +247,14 @@ export default function PreContractAssessmentForm() {
           <select
             value={formData.balRating}
             onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                balRating: e.target.value,
-              }))
+              setFormData((prev) => ({ ...prev, balRating: e.target.value }))
             }
           >
-
             <option value="">Select BAL Rating</option>
             {['BAL-LOW', 'BAL-12.5', 'BAL-19', 'BAL-29', 'BAL-40', 'BAL-FZ'].map((r) => (
-              <option key={r} value={r}>{r}</option>
+              <option key={r} value={r}>
+                {r}
+              </option>
             ))}
           </select>
         </div>
@@ -319,12 +262,12 @@ export default function PreContractAssessmentForm() {
         <div className="card">
           <h2 className="card-title">Site Metadata</h2>
           <div className="meta-grid">
-            <p><strong>Council:</strong> {formData.council || '—'}</p>
-            <p><strong>Latitude:</strong> {formData.lat || '—'}°</p>
-            <p><strong>Longitude:</strong> {formData.lng || '—'}°</p>
+            <p><strong>Council:</strong> {formData.council || 'Data not received from Supabase'}</p>
+            <p><strong>Latitude:</strong> {formData.lat ? `${formData.lat}°` : 'No location selected yet'}</p>
+            <p><strong>Longitude:</strong> {formData.lng ? `${formData.lng}°` : 'No location selected yet'}</p>
             <FootingRiskDisplay
-              elevation={parseFloat(String(formData.elevation || '0'))}
-              distanceToCoast={parseFloat(String(formData.distanceToCoast || '0'))}
+              elevation={parseFloat(formData.elevation || '0')}
+              distanceToCoast={parseFloat(formData.distanceToCoast || '0')}
               onRiskUpdate={({ score, category }) =>
                 setFormData((prev) => ({
                   ...prev,
@@ -338,13 +281,17 @@ export default function PreContractAssessmentForm() {
                 }))
               }
             />
-            <p><strong>Elevation:</strong> {formData.elevation || '—'} m</p>
-            <p><strong>Distance to Coast:</strong> {formData.distanceToCoast ? (parseFloat(formData.distanceToCoast) / 1000).toFixed(2) : '—'} km</p>
-            <p><strong>Wind Zone:</strong> {formData.windZone || '—'}</p>
-            <p><strong>Benchmark 1:</strong> {formData.benchmark1 || '—'} m AHD</p>
-            <p><strong>Benchmark 2:</strong> {formData.benchmark2 || '—'} m AHD</p>
-            <p><strong>Footing Recommendation:</strong> {formData.footingRecommendation || '—'}</p>
-            <p><strong>Risk Summary:</strong> {formData.riskSummary || '—'}</p>
+            <p><strong>Elevation:</strong> {formData.elevation || 'Elevation not retrieved'}</p>
+            <p><strong>Distance to Coast:</strong>
+              {formData.distanceToCoast
+                ? `${(parseFloat(formData.distanceToCoast) / 1000).toFixed(2)} km`
+                : 'No coastal distance available'}
+            </p>
+            <p><strong>Wind Zone:</strong> {formData.windZone || 'Wind zone lookup failed'}</p>
+            <p><strong>Benchmark 1:</strong> {formData.benchmark1 || 'No benchmark found nearby'}</p>
+            <p><strong>Benchmark 2:</strong> {formData.benchmark2 || 'Second benchmark unavailable'}</p>
+            <p><strong>Footing Recommendation:</strong> {formData.footingRecommendation || 'Risk analysis incomplete'}</p>
+            <p><strong>Risk Summary:</strong> {formData.riskSummary || 'Risk category not yet calculated'}</p>
           </div>
         </div>
 
