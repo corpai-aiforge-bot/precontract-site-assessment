@@ -160,7 +160,20 @@ export default function PreContractAssessmentForm() {
 
   const fetchDistanceToCoast = async (lat: number, lng: number): Promise<number | null> => {
     try {
-      const res = await fetch(`/api/proximity?lat=${lat}&lng=${lng}`);
+      const res = await fetch(`https://precontract-site-assessment.onrender.com/api/proximity?lat=${lat}&lng=${lng}`);
+      const json = await res.json();
+      return res.ok ? json.distance ?? null : null;
+    } catch (err) {
+      console.error('Proximity fetch failed:', err);
+      return null;
+    }
+  };
+
+
+  const fetchDistanceToCoast = async (lat: number, lng: number): Promise<number | null> => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE;
+      const res = await fetch(`${baseUrl}/api/proximity?lat=${lat}&lng=${lng}`);
       const json = await res.json();
       return res.ok ? json.distance ?? null : null;
     } catch (err) {
