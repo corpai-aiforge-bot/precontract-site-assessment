@@ -112,6 +112,8 @@ export default function PreContractAssessmentForm() {
   };
 
   const fetchCouncilName = async (postcode: string): Promise<string | null> => {
+    if (!postcode) return null;
+
     const { data, error } = await supabase
       .from('councils_by_postcode')
       .select('lga_region')
@@ -119,9 +121,10 @@ export default function PreContractAssessmentForm() {
       .maybeSingle();
 
     if (error) {
-      console.error('Supabase council lookup error:', error.message);
+      console.error('fetchCouncilName error:', error);
       return null;
     }
+
     return data?.lga_region ?? null;
   };
 
