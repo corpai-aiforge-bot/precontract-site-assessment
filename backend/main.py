@@ -8,6 +8,19 @@ from routes import benchmark, elevation, report,sanity, report_pdf, proximity,wi
 
 app = FastAPI()
 
+from fastapi.responses import JSONResponse
+
+@app.get("/")
+def root():
+    return JSONResponse(
+        content={
+            "status": "OK",
+            "message": "Pre-Contract Site Assessment API is running.",
+            "routes": ["/api/proximity", "/api/windzones", "/api/elevation", "..."]
+        }
+    )
+
+
 # Allow all origins for development (lock down in production)
 app.add_middleware(
     CORSMiddleware,
