@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Nearby Benchmarks</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAziqBiFhIy2UKFr8U5wdboOfB0d2fbno4"></script>
+    <style>
+      #map {
+        height: 100vh;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script>
+      function initMap() {
+        const property = { lat: -35.284683778723355, lng: 138.44699852601198 }; // Corrected 36 Storey Ave
+        const benchmark1 = { lat: -35.28492013762465, lng: 138.4460743610152, height: 16.925, mark: "65272299"};
+        const benchmark2 = { lat: -35.28537864181239, lng: 138.44756234556352, height: 18.370, mark: "65272342"};
+
+        const map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 17,
+          center: property,
+          mapTypeId: 'hybrid'
+        });
+
+        // Property marker
+        new google.maps.Marker({
+          position: property,
+          map,
+          title: "36 Storey Ave (Target Site)",
+          icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
+        });
+
+        // Benchmark 1
+        new google.maps.Marker({
+          position: benchmark1,
+          map,
+          title: `Benchmark #${benchmark1.mark} — ${benchmark1.height} m`,
+          icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+        });
+
+        // Benchmark 2
+        new google.maps.Marker({
+          position: benchmark2,
+          map,
+          title: `Benchmark #${benchmark2.mark} — ${benchmark2.height} m`,
+          icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+        });
+      }
+
+      window.onload = initMap;
+    </script>
+  </body>
+</html>
