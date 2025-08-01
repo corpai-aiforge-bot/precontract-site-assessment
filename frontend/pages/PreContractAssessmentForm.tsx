@@ -75,7 +75,7 @@ export default function PreContractAssessmentForm() {
         fetchCouncilName(postcode),
         fetchElevation(lat, lng),
         fetchDistanceToCoast(lat, lng),
-        fetchNearestWindZone(lat, lng),
+        fetchWindZone(lat, lng),
         fetchBenchmarks(lat, lng),
       ]);
 
