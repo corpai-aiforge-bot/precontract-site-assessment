@@ -2,7 +2,7 @@ import { useState } from 'react';
 import NewAddressAutocomplete from '@/components/newAddressAutocomplete';
 import supabase from '@/lib/supabaseClient';
 import FootingRiskDisplay from '@/components/FootingRiskDisplay';
-import { fetchNearestWindZone } from '@/utils/fetchWindZone';
+
 
 interface AddressMetadata {
   address: string;
@@ -139,6 +139,21 @@ export default function PreContractAssessmentForm() {
       return null;
     }
   };
+
+  const fetchWindZone = async (lat: number, lng: number): Promise<string | null> => {
+    try {
+      const res = await fetch(`/api/windzones?lat=${lat}&lng=${lng}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const json = await res.json();
+      return res.ok ? json.windZone ?? null : null;
+    } catch (err) {
+      console.error('Wind zone fetch failed:', err);
+      return null;
+    }
+  };
+
 
   const fetchDistanceToCoast = async (lat: number, lng: number): Promise<number | null> => {
     try {
