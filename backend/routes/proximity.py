@@ -1,28 +1,12 @@
-from fastapi import APIRouter, Request, HTTPException
-from utils.google_maps import get_distance_to_coast
+# backend/routes/proximity.py
+from fastapi import APIRouter
+from utils.haversine import haversine_distance
 
 router = APIRouter()
 
-@router.get("/api/proximity")
-@router.post("/api/proximity")
-async def get_distance(request: Request):
-    # Handle GET parameters or POST JSON body
-    if request.method == "GET":
-        lat = request.query_params.get("lat")
-        lng = request.query_params.get("lng")
-    else:  # POST
-        data = await request.json()
-        lat = data.get("lat")
-        lng = data.get("lng")
-
-    if lat is None or lng is None:
-        raise HTTPException(status_code=400, detail="lat and lng required")
-
-    try:
-        lat = float(lat)
-        lng = float(lng)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=400, detail="Invalid lat or lng")
-
-    distance_m = get_distance_to_coast(lat, lng) * 1000  # Convert km to meters
-    return {"distance": distance_m}
+@router.get("/proximity")
+async def get_distance(lat: float, lng: float):
+    # For now, hardcode a mock coastal point (e.g., Glenelg SA)
+    coast_lat, coast_lng = -34.98, 138.50
+    distance_km = haversine_distance(lat, lng, coast_lat, coast_lng)
+    return {"distance": distance_km}
