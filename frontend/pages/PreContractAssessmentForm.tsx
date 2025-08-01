@@ -91,7 +91,7 @@ export default function PreContractAssessmentForm() {
         council: councilRes || '',
         elevation: elevRes?.toString() || '',
         distanceToCoast: distRes?.toString() || '',
-        windZone: windRes?.region || windRes?.area || '',
+        windZone: windRes || '',
         benchmark1: benchmarks?.benchmark1?.toString() || '',
         benchmark2: benchmarks?.benchmark2?.toString() || '',
       }));
